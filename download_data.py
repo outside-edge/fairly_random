@@ -1,6 +1,7 @@
 '''
 Download Cricket Data
-Last Edited: 05.27.15
+Last Edited: 06.27.15
+Updated to replace urllib2 with requests
 
 @author: Gaurav Sood
 
