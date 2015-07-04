@@ -1,7 +1,6 @@
 '''
 Download Cricket Data
-Last Edited: 06.27.15
-Updated to replace urllib2 with requests
+Last Edited: 05.27.15
 
 @author: Gaurav Sood
 
@@ -11,21 +10,17 @@ Updated to replace urllib2 with requests
 # -*- coding: utf-8 -*-
 
 import requests
+import math
 import csv
 import sys
 import time
 import os
-import math
+import simplejson
 import unicodedata
-from urlparse import urlparse
 from BeautifulSoup import BeautifulSoup, SoupStrainer
 
-BASE_URL = 'http://www.espncricinfo.com'
-
-if not os.path.exists('espncricinfo'):
-    os.mkdir('espncricinfo')
-
 for match_type in ['odi', 'test', 't20i', 't20', 'list%20a', 'first%20class']:
+    results = []
     r = requests.get('http://search.espncricinfo.com/ci/content/match/search.html?all=1;page=0;search=' + match_type)
     soup = BeautifulSoup(r.text)
     last_match = int(soup.findAll('span', attrs={'class':'PaginationNmbrs'})[-1].text)
@@ -39,12 +34,10 @@ for match_type in ['odi', 'test', 't20i', 't20', 'list%20a', 'first%20class']:
                 new_host = new_host['href']
             except:
                 continue
-            odiurl = BASE_URL + urlparse(new_host).geturl()
             new_host = unicodedata.normalize('NFKD', new_host).encode('ascii','ignore')
-            print new_host
             #print(type(str.split(new_host)[3]))
-            print str.split(new_host, "/")[4]
-            html = requests.get(odiurl).text
-            if html:
-                with open('espncricinfo/%s' % str.split(new_host, "/")[4], "wb") as f:
-                    f.write(html)
+            print str.split(new_host, "/")[4].split('.')[0]
+            results.append(str.split(new_host, "/")[4].split('.')[0])
+
+    with open("matches-{0}.json".format(match_type), "wb") as f:
+        simplejson.dump(results, f)
