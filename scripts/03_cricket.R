@@ -4,8 +4,11 @@
 
 "
 
+# Load libs
+library(plyr)
+
 # setwd
-setwd("cricket-stats")
+setwd(paste0(githubdir, "/cricket-stats"))
 
 # Read in data
 cricket <- read.csv("data/final_output.csv")
@@ -50,37 +53,39 @@ ddply(cricket,~type_of_match + day_n_night,summarise,mean=mean(tossgame))
 ddply(cricket,~type_of_match + duckworth_lewis,summarise,mean=mean(tossgame))
 
 # Figs
+
+# Fig libs
 library(ggplot2)
+library(grid)
+
+# For figs - let us get type of match is nicer factor order
+cricket$type_of_match <- factor(cricket$type_of_match, levels=c("FC", "TEST", "LISTA", "ODI", "T20", "T20I"))
 
 "
-By Match Type
-Let us plot 
+Win By Match Type
 "
 
 win_match_type <- ddply(cricket,~type_of_match,summarise, diff=mean(I(tossgame==1) - I(tossgame==0)), count=length(unique(url)))
 win_match_type$diff <- win_match_type$diff*100 # convert to %
 
-# Win by Format
 ggplot(win_match_type, aes(type_of_match, diff)) + 
 geom_bar(stat = "identity", position = "identity", fill="#42C4C7") + 
 theme_minimal() + 
 xlab("") +
-scale_y_continuous(breaks=seq(-.5, 7, 1), labels=nolead0s(seq(-.5, 7, 1)), limits=c(-.5, 7), name="") +
+scale_y_continuous(breaks=seq(-1, 7, 1), labels=nolead0s(seq(-1, 7, 1)), limits=c(-1, 7), name="") +
 theme(panel.grid.major.y = element_line(colour = "#e3e3e3", linetype = "dotted"),
-        panel.grid.minor.x = element_blank(),
-        panel.grid.major.x = element_line(colour = "#f7f7f7", linetype = "solid"),
-        panel.border       = element_blank(),
-        legend.position  = "none",
-        legend.key       = element_blank(),
-        legend.key.width = unit(1,"cm"),
-        axis.title   = element_text(size=10),
-        axis.text    = element_text(size=8),
-        axis.ticks.y = element_blank(),
-        axis.line.x  = element_line(colour = 'red', size = 3, linetype = 'dashed'),
-        axis.title.x = element_text(vjust=-1),
-        axis.title.y = element_text(vjust= 1),
-        plot.margin = unit(c(0,.5,.5,.5), "cm"))
-ggsave("../figs/winbyType.pdf")
+	  panel.grid.minor.x = element_blank(),
+	  panel.grid.major.x = element_line(colour = "#f3f3f3", linetype = "solid"),
+	  panel.border       = element_blank(),
+	  legend.position  = "none",
+ 	  title        = element_text(size=8),
+	  axis.title   = element_text(size=8),
+	  axis.text    = element_text(size=8),
+	  axis.ticks.y = element_blank(),
+	  axis.ticks.x = element_line(colour = '#f1f1f1'),
+	  strip.text.x =  element_text(size=9),
+	  legend.text=element_text(size=8))
+ggsave("figs/winbyType.pdf")
 
 "
 Win by Day/Night
@@ -105,18 +110,23 @@ theme(panel.grid.major.y = element_line(colour = "#e3e3e3", linetype = "dotted")
       legend.text        = element_text(size=10),
       legend.background  = element_rect(color="#ffffff"),
       legend.key         = element_rect(color="#ffffff", fill="#ffffff"),
-      legend.key.size = unit(.1,"cm"),
-      legend.margin = unit(.2,"cm"),
-      axis.title   = element_text(size=10),
-      axis.text    = element_text(size=8),
-      axis.ticks.y = element_blank(),
-      axis.title.x = element_text(vjust=-1),
-      axis.title.y = element_text(vjust= 1),
-      plot.margin = unit(c(0,.5,.5,.5), "cm"))
+      legend.key.size    = unit(.1,"cm"),
+      legend.margin      = unit(.2,"cm"),
+      title              = element_text(size=8),
+	  axis.title         = element_text(size=8),
+	  axis.text          = element_text(size=8),
+	  axis.ticks.y       = element_blank(),
+	  axis.ticks.x       = element_line(colour = '#f1f1f1'),
+	  strip.text.x       = element_text(size=9),
+	  legend.text        = element_text(size=8),
+      plot.margin        = unit(c(0,.5,.5,.5), "cm"))
 
-ggsave("../figs/winbyDayNight.pdf")
+ggsave("figs/winbyDayNight.pdf")
 
-# Win by DL
+"
+Win by DL
+"
+
 ltd_dl <- ddply(ltdcricket,~type_of_match + duckworth_lewis,summarise, diff=mean(I(tossgame==1) - I(tossgame==0)), count=length(unique(url)))
 ltd_dl$diff <- ltd_dl$diff*100
 
@@ -125,7 +135,7 @@ geom_bar(stat="identity", position="dodge") +
 theme_minimal() + 
 xlab("") +
 scale_fill_discrete(name="", labels=c(" No D/L   ", " Duckworth Lewis")) + 
-scale_y_continuous(breaks=seq(-1.5, 7, 1), labels=nolead0s(seq(-1.5, 7, 1)), limits=c(-1.5, 7), name="") +
+scale_y_continuous(breaks=seq(-1, 7, 1), labels=nolead0s(seq(-1, 7, 1)), limits=c(-1, 7), name="") +
 theme(panel.grid.major.y = element_line(colour = "#e3e3e3", linetype = "dotted"),
       panel.grid.minor.x = element_blank(),
       panel.grid.major.x = element_line(colour = "#f7f7f7", linetype = "solid"),
@@ -134,14 +144,21 @@ theme(panel.grid.major.y = element_line(colour = "#e3e3e3", linetype = "dotted")
       legend.text        = element_text(size=10),
       legend.background  = element_rect(color="#ffffff"),
       legend.key         = element_rect(color="#ffffff", fill="#ffffff"),
-      legend.key.size = unit(.1,"cm"),
-      legend.margin = unit(.2,"cm"),
-      axis.title   = element_text(size=10),
-      axis.text    = element_text(size=8),
-      axis.ticks.y = element_blank(),
-      axis.title.x = element_text(vjust=-1),
-      axis.title.y = element_text(vjust= 1),
-      plot.margin = unit(c(0,.5,.5,.5), "cm"))
+      legend.key.size    = unit(.1,"cm"),
+      legend.margin      = unit(.2,"cm"),
+      title              = element_text(size=8),
+	  axis.title         = element_text(size=8),
+	  axis.text          = element_text(size=8),
+	  axis.ticks.y       = element_blank(),
+	  axis.ticks.x       = element_line(colour = '#f1f1f1'),
+	  strip.text.x       = element_text(size=9),
+	  legend.text        = element_text(size=8),
+      plot.margin        = unit(c(0,.5,.5,.5), "cm")) + 
+annotate("text", x = 4.2, y = .15, label = "zero", size=3) 
+ggsave("figs/winbyDL.pdf")
+
+"
+Is there over time learning? If so, toss adv. would increase.
+" 
 
 
-ggsave("../figs/winbyDL.pdf")
