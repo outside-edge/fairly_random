@@ -155,7 +155,7 @@ theme(panel.grid.major.y = element_line(colour = "#e3e3e3", linetype = "dotted")
 	  legend.text        = element_text(size=8),
       plot.margin        = unit(c(0,.5,.5,.5), "cm")) + 
 annotate("text", x = 4.2, y = .15, label = "zero", size=3) 
-ggsave("figs/winbyDL.pdf")
+ggsave("figs/winbyDL.pdf", width=5)
 
 "
 Is there over time learning? If so, toss adv. would increase.
