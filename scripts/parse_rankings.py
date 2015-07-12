@@ -25,7 +25,7 @@ FORMAT_RANGES = {
 def parser(format):
     with open("../data/rankings_%s.csv" % format, "wb") as csvfile:
         writer = csv.writer(csvfile)
-        writer.writerow(['format', 'year', 'month', 'rank', 'country', 'points'])
+        writer.writerow(['format', 'year', 'month', 'rank', 'country', 'rating'])
         for year in FORMAT_RANGES[format]:
             rankings = fetch_rankings(year, format)
             for ranking in rankings:
@@ -42,6 +42,6 @@ def fetch_rankings(year, format):
     combo = zip(months, tables)
     for month, table in combo:
         for row in table.findAll('tr')[1:-1]:
-            rank, country, points = [td.text for td in row.findAll('td')]
-            results.append([format, year, month, int(rank), country, int(points)])
+            rank, country, rating = [td.text for td in row.findAll('td')]
+            results.append([format, year, month, int(rank), country, int(rating)])
     return results

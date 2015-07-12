@@ -1,4 +1,4 @@
-format,year,month,rank,country,points
+format,year,month,rank,country,rating
 test,1952,1,1,Australia,130
 test,1952,1,2,West Indies,118
 test,1952,1,3,England,91
