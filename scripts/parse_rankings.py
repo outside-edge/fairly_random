@@ -23,7 +23,7 @@ FORMAT_RANGES = {
 }
 
 def parser(format):
-    with open("rankings_%s.csv" % format, "wb") as csvfile:
+    with open("../data/rankings_%s.csv" % format, "wb") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(['format', 'year', 'month', 'rank', 'country', 'points'])
         for year in FORMAT_RANGES[format]:
