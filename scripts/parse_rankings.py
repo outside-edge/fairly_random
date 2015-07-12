@@ -45,3 +45,11 @@ def fetch_rankings(year, format):
             rank, country, rating = [td.text for td in row.findAll('td')]
             results.append([format, year, month, int(rank), country, int(rating)])
     return results
+
+def fetch_current_rankings(format):
+    """
+    format is one of: 'test', 'odi' or 't20i'
+    """
+    r = requests.get("http://www.icc-cricket.com/api/getRankings")
+    rankings_json = r.json()
+    return [r['rankings'] for r in rankings_json if r['matchType'] == format.upper()][0]
