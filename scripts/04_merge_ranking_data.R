@@ -69,14 +69,20 @@ test_ranks$unique <- paste0("TEST", test_ranks$country, test_ranks$month_abb, te
 
 # Bring out data 
 match$team1_rank <- match$team2_rank <- NA
-match$team1_rank <- odi_ranks$rating[match(match$team1_id, odi_ranks$unique)]
-match$team1_rank <- test_ranks$rating[match(match$team1_id, test_ranks$unique)]
-match$team2_rank <- odi_ranks$rating[match(match$team2_id, odi_ranks$unique)]
-match$team2_rank <- test_ranks$rating[match(match$team2_id, test_ranks$unique)]
+odi  <- odi_ranks$rating[match(match$team1_id, odi_ranks$unique)]
+test <- test_ranks$rating[match(match$team1_id, test_ranks$unique)]
+match$team1_rank <- ifelse(is.na(odi), test, odi)
+odi  <- odi_ranks$rating[match(match$team2_id, odi_ranks$unique)]
+test <- test_ranks$rating[match(match$team2_id, test_ranks$unique)]
+match$team2_rank <- ifelse(is.na(odi), test, odi)
 
 # Adhoc data integrity check 
-match$team1_rank[match$type_of_match=='ODI' & month=='Apr']
+match$team1_rank[match$type_of_match=='ODI' & match$month=='Apr']
+table(as.character(match$team1[!is.na(match$team1_rank)]))
+table(as.character(match$team2[!is.na(match$team2_rank)]))
 
 # Diff in ranking
 match$diff_ranks <- abs(match$team1_rank - match$team2_rank)
 
+# Signed diff
+match$signed_diff_ranks <- ifelse(as.character(match$team1)==as.character(match$win_toss), match$diff_ranks, -1*match$diff_ranks)

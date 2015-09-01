@@ -51,6 +51,8 @@ cricket$tossgame <- 1*(as.character(cricket$win_game)==as.character(cricket$win_
 # The game is drawn
 cricket$tossgame[cricket$draw==1] <- .5
 
+# Coding ranking diff. sign based on team that wins the toss
+
 # Results
 ddply(cricket,~type_of_match + day_n_night,summarise,mean=mean(tossgame))
 ddply(cricket,~type_of_match + duckworth_lewis,summarise,mean=mean(tossgame))
@@ -160,10 +162,47 @@ theme(panel.grid.major.y = element_line(colour = "#e3e3e3", linetype = "dotted")
 annotate("text", x = 4.2, y = .15, label = "zero", size=3) 
 ggsave("figs/winbyDL.pdf", width=5)
 
+
+"
+Win by Diff. in ranks
+
+Probab. of team that wins the toss winning conditional on signed ranking diff. w/ competing team
+
+"
+
+# glm
+with(cricket, glm(tossgame==1 ~ signed_diff_ranks))
+
+rankcricket <- subset(cricket, type_of_match %in% c("ODI", "TEST"))
+win_rank <- ddply(rankcricket,~signed_diff_ranks,summarise, diff=mean(I(tossgame==1) - I(tossgame==0)), count=length(unique(url)))
+win_rank$diff <- win_rank$diff*100
+
+ggplot(win_rank, aes(x=signed_diff_ranks, y=diff)) + 
+geom_smooth(method="auto") +
+theme_minimal() + 
+scale_x_continuous(breaks=seq(-50, 50, 10), labels=nolead0s(seq(-50, 50, 10)), limits=c(-50, 50)) +
+scale_y_continuous(breaks=seq(-35, 15, 5), labels=nolead0s(seq(-35, 15, 5)), limits=c(-35, 15), name="") +
+theme(panel.grid.major.y = element_line(colour = "#e3e3e3", linetype = "dotted"),
+      panel.grid.minor.x = element_blank(),
+      panel.grid.major.x = element_line(colour = "#f7f7f7", linetype = "solid"),
+      panel.border       = element_blank(),
+      legend.position  	 = "bottom",
+      legend.text        = element_text(size=10),
+      legend.background  = element_rect(color="#ffffff"),
+      legend.key         = element_rect(color="#ffffff", fill="#ffffff"),
+      legend.key.size    = unit(.1,"cm"),
+      legend.margin      = unit(.2,"cm"),
+      title              = element_text(size=8),
+	  axis.title         = element_text(size=8),
+	  axis.text          = element_text(size=8),
+	  axis.ticks.y       = element_blank(),
+	  axis.ticks.x       = element_line(colour = '#f1f1f1'),
+	  strip.text.x       = element_text(size=9),
+	  legend.text        = element_text(size=8),
+      plot.margin        = unit(c(0,.5,.5,.5), "cm"))
+ggsave("figs/winbyRank.pdf", width=5)
+
+
 "
 Is there over time learning? If so, toss adv. would increase.
 " 
-
-
-ddply(cricket,~type_of_match + day_n_night,summarise,mean=mean(tossgame))
-with(cricket, glm(tossgame ~ diff_ranks))
