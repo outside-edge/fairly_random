@@ -4,21 +4,24 @@
 
 "
 
-# Load libs
-library(plyr)
-
 # setwd
 setwd(paste0(githubdir, "/cricket-stats"))
 
-# Read in data
-cricket <- read.csv("data/final_output.csv")
+# Source merge script
+source("scripts/04_merge_ranking_data.R")
+
+# Load libs
+library(plyr)
+
+# Read in data/ now sourcing it - see 04_merge_ranking_data
+# cricket <- read.csv("data/final_output.csv")
 
 "
 Take out matches with no toss (~ no match)
 About 3k matches. Don't like the 7% number. Touch too high, imho. But checked data - turns out to be ok.
 
 "
-cricket <- subset(cricket, win_toss!="")
+cricket <- subset(match, win_toss!="")
 
 "
 Take out matches where there was no result
@@ -44,7 +47,7 @@ Imp. esp. for first class games
 
 # Recode
 # Coding team that wins the toss wins the game
-cricket$tossgame <- 1*(cricket$win_game==cricket$win_toss)
+cricket$tossgame <- 1*(as.character(cricket$win_game)==as.character(cricket$win_toss))
 # The game is drawn
 cricket$tossgame[cricket$draw==1] <- .5
 
@@ -162,3 +165,5 @@ Is there over time learning? If so, toss adv. would increase.
 " 
 
 
+ddply(cricket,~type_of_match + day_n_night,summarise,mean=mean(tossgame))
+with(cricket, glm(tossgame ~ diff_ranks))
