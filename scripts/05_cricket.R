@@ -180,7 +180,8 @@ win_rank$diff <- win_rank$diff*100
 ggplot(win_rank, aes(x=signed_diff_ranks, y=diff)) + 
 geom_smooth(method="auto") +
 theme_minimal() + 
-scale_x_continuous(breaks=seq(-50, 50, 10), labels=nolead0s(seq(-50, 50, 10)), limits=c(-50, 50)) +
+geom_vline(xintercept=0, col="red", size=.1) +
+scale_x_continuous(breaks=seq(-50, 50, 10), labels=nolead0s(seq(-50, 50, 10)), limits=c(-50, 50), name="Ranking Advantage of Team That Won the Toss") +
 scale_y_continuous(breaks=seq(-35, 15, 5), labels=nolead0s(seq(-35, 15, 5)), limits=c(-35, 15), name="") +
 theme(panel.grid.major.y = element_line(colour = "#e3e3e3", linetype = "dotted"),
       panel.grid.minor.x = element_blank(),
