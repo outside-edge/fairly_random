@@ -208,3 +208,12 @@ ggsave("figs/winbyRank.pdf", width=6)
 "
 Is there over time learning? If so, toss adv. would increase.
 " 
+
+"
+Toss Adv. by Country
+For this - we would want to do Win/Win Toss - Win/Lose Toss to adjust for team probab.
+
+"
+
+
+
