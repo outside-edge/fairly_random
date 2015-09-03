@@ -11,7 +11,7 @@ Reflecting the duplication of work, in this repository, we decided to provide sc
 
 #### Analysis, Write-up, And Figures
 
-We began by [merging the ranking and the match data]](scripts/03_merge_ranking_data.R). We next [analyzed the data](scripts/04_cricket.R). The script produces [these figures](figs/). The tex and pdf files for the final write-up can be found [here](write_up/). 
+We began by [merging the ranking and the match data](scripts/03_merge_ranking_data.R). We next [analyzed the data](scripts/04_cricket.R). The script produces [these figures](figs/). The tex and pdf files for the final write-up can be found [here](write_up/). 
 
 #### Authors
 
@@ -19,4 +19,4 @@ Gaurav Sood and Derek Willis
 
 #### License
 
-Scripts, figures, and writing are released under [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/). The data without any license.
+Scripts, figures, and writing are released under [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/). 
