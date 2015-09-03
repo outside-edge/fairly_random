@@ -8,13 +8,22 @@
 setwd(paste0(githubdir, "/cricket-stats"))
 
 # Source merge script
-source("scripts/04_merge_ranking_data.R")
+source("scripts/03_merge_ranking_data.R")
 
 # Load libs
 library(plyr)
 
 # Read in data/ now sourcing it - see 04_merge_ranking_data
 # cricket <- read.csv("data/final_output.csv")
+
+"
+Fix Data
+# cricket$outcome[cricket$win_game!='']
+"
+
+temp  <- sapply(strsplit(match$outcome, "won", fixed=T), "[", 1) #get the stuff before the word won
+temp2 <- sub("\\s+$", "", temp) # strip trailing space
+match$win_game <- ifelse(match$win_game=="", temp2, match$win_game)
 
 "
 Take out matches with no toss (~ no match)
@@ -28,7 +37,7 @@ Take out matches where there was no result
 Leaves us w/ 39672 rows
 "
 
-cricket <- subset(cricket, outcome!="No result")
+cricket <- subset(cricket, outcome!="No result" & win_game!="")
 
 "
 Drawn Matches
@@ -45,13 +54,36 @@ Imp. esp. for first class games
 
 "
 
+# Win toss then you lose
+cricket$team1_win_toss <- 1*(cricket$team1==cricket$win_toss)
+cricket$team2_win_toss <- 1*(cricket$team2==cricket$win_toss)
+cricket$team1_win_game <- 1*(cricket$team1==cricket$win_game)
+cricket$team2_win_game <- 1*(cricket$team2==cricket$win_game)
+
 # Recode
 # Coding team that wins the toss wins the game
-cricket$tossgame <- 1*(as.character(cricket$win_game)==as.character(cricket$win_toss))
+cricket$tossgame <- 1*(cricket$win_game==cricket$win_toss)
 # The game is drawn
 cricket$tossgame[cricket$draw==1] <- .5
 
+" 
+Data Integrity Check
+
+table(cricket$win_game[!(cricket$team1_win_game | cricket$team2_win_game)])
+
+length(unique(c(cricket$team1, cricket$team2)))
+length(unique(cricket$win_toss))
+
+"
+a <- unique(c(levels(cricket$team1), levels(cricket$team2)))[!(unique(c(levels(cricket$team1), levels(cricket$team2))) %in% levels(cricket$win_toss))]
+cricket$win_toss[cricket$team1 %in% a[1]]
+
+cricket$team1_win_game[cricket$team1_win_toss==1] 
+cricket$team2_win_game[cricket$team2_win_toss==1] 
+
 # Coding ranking diff. sign based on team that wins the toss
+team1_wins_toss, team1_wins_game
+
 
 # Results
 ddply(cricket,~type_of_match + day_n_night,summarise,mean=mean(tossgame))
@@ -62,6 +94,7 @@ ddply(cricket,~type_of_match + duckworth_lewis,summarise,mean=mean(tossgame))
 # Fig libs
 library(ggplot2)
 library(grid)
+library(goji)
 
 # For figs - let us get type of match is nicer factor order
 cricket$type_of_match <- factor(cricket$type_of_match, levels=c("FC", "TEST", "LISTA", "ODI", "T20", "T20I"))
@@ -206,14 +239,19 @@ ggsave("figs/winbyRank.pdf", width=6)
 
 
 "
-Is there over time learning? If so, toss adv. would increase.
+Is there over time learning? If so, toss adv. would increase. 
+Or it could be that teams develop better strategies to offset toss advantage. 
+If you are going to come up short half the times, you develop strategies to counter that.
 " 
 
+
+
 "
-Toss Adv. by Country
+Toss Adv. by Country - Are some countries better than others. Hard to say in some ways as competing against v. diff. teams. 
 For this - we would want to do Win/Win Toss - Win/Lose Toss to adjust for team probab.
 
 "
+
 
 
 
