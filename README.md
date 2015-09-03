@@ -9,9 +9,9 @@ Reflecting the duplication of work, in this repository, we decided to provide sc
 
 * **Rankings Data**: [parse_rankings](scripts/02_parse_rankings.py) gets monthly rankings for ODIs from 1981-2013 and for tests from 1952-2013. ICC changed its site in 2014 so that it only shows the most recent rankings. The script outputs [odi rankings](data/odi_ranks.csv) and [test rankings](data/test_ranks.csv).
 
-#### Analysis, Write Up And Figures
+#### Analysis, Write-up, And Figures
 
-We began by merging the ranking and the match data. The script for that can be found [here](scripts/03_merge_ranking_data.R). The script for analyses and figures can be found [here](scripts/04_cricket.R). The script produces [these figures](figs/). And the tex and pdf files for the final write up can be found [here](write_up/). 
+We began by [merging the ranking and the match data]](scripts/03_merge_ranking_data.R). We next [analyzed the data](scripts/04_cricket.R). The script produces [these figures](figs/). The tex and pdf files for the final write-up can be found [here](write_up/). 
 
 #### Authors
 
@@ -19,4 +19,4 @@ Gaurav Sood and Derek Willis
 
 #### License
 
-Released under [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/)
+Scripts, figures, and writing are released under [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/). The data without any license.
