@@ -1,5 +1,5 @@
 "
-@title: Fairly Random (or Choosing Badly): Impact of Winning the Toss on the Probability of Winning
+@title:   Fairly Random: Impact of Winning the Toss on the Probability of Winning
 @authors: Gaurav Sood and Derek Willis
 
 "
@@ -17,15 +17,10 @@ library(plyr)
 # cricket <- read.csv("data/final_output.csv")
 
 "
-Fix Data
-# cricket$outcome[cricket$win_game!='']
-"
+Data integrity
+match$outcome[match$win_game==''] # looks good
+table(match$outcome[match$win_toss=='' & match$outcome!=''])
 
-temp  <- sapply(strsplit(match$outcome, "won", fixed=T), "[", 1) #get the stuff before the word won
-temp2 <- sub("\\s+$", "", temp) # strip trailing space
-match$win_game <- ifelse(match$win_game=="", temp2, match$win_game)
-
-"
 Take out matches with no toss (~ no match)
 About 3k matches. Don't like the 7% number. Touch too high, imho. But checked data - turns out to be ok.
 
@@ -71,19 +66,12 @@ Data Integrity Check
 
 table(cricket$win_game[!(cricket$team1_win_game | cricket$team2_win_game)])
 
+# 137 Teams in db that haven't won a toss
 length(unique(c(cricket$team1, cricket$team2)))
 length(unique(cricket$win_toss))
+a <- unique(c(cricket$team1, cricket$team2))[!(unique(c(cricket$team1, cricket$team2)) %in% unique(cricket$win_toss))]
 
 "
-a <- unique(c(levels(cricket$team1), levels(cricket$team2)))[!(unique(c(levels(cricket$team1), levels(cricket$team2))) %in% levels(cricket$win_toss))]
-cricket$win_toss[cricket$team1 %in% a[1]]
-
-cricket$team1_win_game[cricket$team1_win_toss==1] 
-cricket$team2_win_game[cricket$team2_win_toss==1] 
-
-# Coding ranking diff. sign based on team that wins the toss
-team1_wins_toss, team1_wins_game
-
 
 # Results
 ddply(cricket,~type_of_match + day_n_night,summarise,mean=mean(tossgame))
