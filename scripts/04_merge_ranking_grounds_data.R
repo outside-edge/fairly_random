@@ -1,5 +1,5 @@
 "
-@title: Merge Ranking Data with Cricket Data
+@title: Merge Ranking and Grounds Data with Cricket Data
 @authors: Gaurav Sood and Derek Willis
 
 "
@@ -13,6 +13,10 @@ options(StringsAsFactors=F)
 # Load ranking data
 odi_ranks  <- read.csv("data/rankings_odi.csv")
 test_ranks <- read.csv("data/rankings_test.csv")
+
+# Ground
+grounds <- read.csv("data/grounds.csv")
+
 
 "
 Notes: ODI/Test ranks data till 2013
@@ -86,3 +90,10 @@ match$diff_ranks <- abs(match$team1_rank - match$team2_rank)
 
 # Signed diff
 match$signed_diff_ranks <- ifelse(as.character(match$team1)==as.character(match$win_toss), match$diff_ranks, -1*match$diff_ranks)
+
+# Add the grounds data
+
+# Trim leading and trailing spaces for grounds
+match$ground <- gsub("^\\s+", "", trim.trailing(match$ground))
+# Add dat
+match[, c("ground_id", "country", "continent", "latitude", "longitude")] <- grounds[match(match$ground, grounds$ground), c("ground_id", "country", "continent", "latitude", "longitude")]
