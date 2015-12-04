@@ -1,4 +1,4 @@
-\documentclass[11pt]{article}
+\documentclass[12pt]{article}
 \usepackage{color}
 \usepackage[usenames,dvipsnames,svgnames,table]{xcolor}
 \definecolor{dark-red}{rgb}{0.7,0.1,0.1} 
@@ -7,13 +7,17 @@
             colorlinks=true,
             urlcolor=dark-blue,
             pdfstartview={XYZ null null 1.00},
-            pdfauthor={Gaurav Sood, gsood07@gmail.com; Derek Willis, dwillis@gmail.com},
+            pdfauthor={Gaurav Sood, gsood07@gmail.com},
             citecolor=dark-red,
             bookmarks=false,
             pdfborder={0 0 0},
             pdftitle={Fairly Random}]{hyperref}
             
 \usepackage{amsfonts,amssymb,amsbsy,amsmath,amsxtra}
+
+\usepackage[letterspace=1000]{microtype}
+\usepackage{libertine}
+\usepackage[T1]{fontenc}
 
 \usepackage{indentfirst}
 \usepackage{setspace} % To set line spacing
@@ -43,21 +47,22 @@ setwd(paste0(githubdir, "/cricket-stats/"))
 \end{comment}
 
 \begin{document}
-\title{\vspace{-1cm}\normalsize{\textbf{Fairly Random: Impact of Winning the Toss on the Probability of Winning}}}
-\author{Gaurav Sood\\\small{\href{mailto:gsood07@gmail.com}{\tt{gsood07@gmail.com}}} \and Derek Willis\\\small{\href{mailto:dwillis@gmail.com}{\tt{dwillis@gmail.com}}}}
+\title{\vspace{-.5cm}\normalsize{Fairly Random: Impact of Winning the Toss on the Probability of Winning\footnote{You can find the scripts used to scrape the data, the final data set, and scripts used for analysis at: \href{https://github.com/dwillis/cricket-stats}{https://github.com/dwillis/cricket-stats}.}\vspace{.5cm}}}
+\author{\normalsize{Gaurav Sood}\\\href{mailto:gsood07@gmail.com}{\small{gsood07@gmail.com}} \and \normalsize{Derek Willis}\\\href{mailto:dwillis@gmail.com}{\small{dwillis@gmail.com}}}
+\date{\vspace{.5cm}\normalsize{\today}}
 \maketitle
 \doublespacing
 
 In nearly all cricket matches, it is claimed that there is a clear advantage to bowling (batting) first. The advantage is pointed to by commentators, by the team captains in the pre-toss interview, and by the captain of the losing team in the post-match interview. And to wrest this said advantage, one merely needs to pick the side of the coin that will be left facing the sky after it is tossed. And while this method of granting advantage is fair on average, the system isn't fair in any one game. 
 
-At first glance, the imbalance seems inevitable. After all, someone has to bat first. One can, however, devise a baseball like system where short innings are interspersed. If that violates the nature of the game too much, one can easily create pitches that don't deteriorate appreciably over the course of a game. Or, one can come up with an estimate of the advantage and adjust scores accordingly (something akin to an adjustment issued when matches are shortened due to rain).
+At first glance, the imbalance seems inevitable. After all, someone has to bat first. One can, however, devise a baseball like system where short innings are interspersed. If that violates the nature of the game too much, one can easily create pitches that don't deteriorate appreciably over the course of a game. Or, one can come up with an estimate of the advantage, and adjust scores accordingly, akin to an adjustment issued when matches are shortened due to rain.
 
-None of this to say that there is actually an advantage to winning the toss, or, that teams are able to successfully exploit the potential advantage. For it may be impossible to predict well in advance the advantage of bowling or batting first. Or, it may be that teams squander the potential advantage by using bad heuristics to choose what they do.
+None of this to say that there is actually an advantage in winning the toss, or that teams are able to successfully exploit any such advantage. For it may be impossible to predict well in advance the advantage of bowling or batting first. Or, it may be that teams squander the potential advantage by using bad heuristics to choose what they do.
 
 To assess the net observed advantage of winning the toss, we leverage data from over 43,000 first-class men's cricket matches --- to our knowledge, largest ever dataset assembled for the question, and nearly 50--100 times larger than used in prominent previous attempts \citep[see,][]{dawson2009bat, de1998winning}. Using the data, we estimate the impact of winning the toss on the probability of winning a match. Unlike some other studies on the topic, e.g. \citet{dawson2009bat, Saad2015}, we do not condition on post coin-toss decisions to avoid post-treatment bias \citep[see][]{acharya2015}. We find that winning the toss grants a small but significant advantage, but that advantage varies considerably and systematically. 
 
 \section*{Data}
-Data are from 43,185 first-class men's cricket matches.\footnote{You can find the scripts used to scrape the data, the final data set, and scripts used for analysis at: \href{https://github.com/dwillis/cricket-stats}{https://github.com/dwillis/cricket-stats}.} It is a near census of the relevant population. We have data on all types of matches: domestic and international Twenty20s -- T20s and T20Is respectively, domestic and international one-dayers -- List A and One-Day Internationals (ODI) respectively, and domestic and international multi-day matches -- First Class (FC) and Tests respectively.\footnote{There is a rich variety of first-class matches. In English county cricket, first-class matches last four days. Some first class matches last just a day. Others two days. Yet others three days. And till a particular point in history, a test match lasted as long as it was needed to finish a game. We elide over such differences.} 
+Data are from 43,185 first-class men's cricket matches. It is a near census of the relevant population. We have data on all types of matches: domestic and international Twenty20s -- T20s and T20Is respectively, domestic and international one-dayers -- List A and One-Day Internationals (ODI) respectively, and domestic and international multi-day matches -- First Class (FC) and Tests respectively.\footnote{There is a rich variety of first-class matches. In English county cricket, first-class matches last four days. Some first class matches last just a day. Others two days. Yet others three days. And till a particular point in history, a test match lasted as long as it was needed to finish a game. We elide over such differences.} 
 
 Of these matches, we do not have data on the toss for 2,807, or roughly 7\%, of the matches. The primary reason we don't have data on these matches is because the match was abandoned without play. We exclude data from these matches. 
 
