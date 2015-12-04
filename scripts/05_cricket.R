@@ -8,7 +8,7 @@
 setwd(paste0(githubdir, "/cricket-stats"))
 
 # Source merge script
-source("scripts/03_merge_ranking_data.R")
+source("scripts/04_merge_ranking_grounds_data.R")
 
 # Load libs
 library(plyr)
