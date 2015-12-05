@@ -44,6 +44,15 @@ cricket$draw <- 1*(cricket$outcome=="Match drawn")
 # table(cricket$win_game[cricket$draw==1])
 
 "
+Country that won toss == Home Country
+International Matches Only --- as they are the easiest
+"
+cricket$country_data  <- cricket$country == cricket$team1 | cricket$country==cricket$team2
+cricket$home_toss_win <- cricket$country == cricket$win_toss
+sum(cricket$home_toss_win)/sum(cricket$country_data)
+binom.test(2433, 4749, p=.5)
+
+"
 Winning a toss causes outcome including draws.
 Imp. esp. for first class games
 
