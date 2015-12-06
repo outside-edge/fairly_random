@@ -12,6 +12,7 @@ source("scripts/04_merge_ranking_grounds_data.R")
 
 # Load libs
 library(plyr)
+library(stringi)
 
 # Read in data/ now sourcing it - see 04_merge_ranking_data
 # cricket <- read.csv("data/final_output.csv")
@@ -35,6 +36,11 @@ Leaves us w/ 39672 rows
 cricket <- subset(cricket, outcome!="No result" & win_game!="")
 
 "
+Team 2 missing in one case
+"
+cricket <- subset(cricket, team2!="")
+
+"
 Drawn Matches
 6674 of them ~ 17%
 "
@@ -47,10 +53,21 @@ cricket$draw <- 1*(cricket$outcome=="Match drawn")
 Country that won toss == Home Country
 International Matches Only --- as they are the easiest
 "
+
 cricket$country_data  <- cricket$country == cricket$team1 | cricket$country==cricket$team2
 cricket$home_toss_win <- cricket$country == cricket$win_toss
 sum(cricket$home_toss_win)/sum(cricket$country_data)
 binom.test(2433, 4749, p=.5)
+
+"
+# Less precise
+# Denominator ...?
+cricket$home_toss_win_t <- stri_detect_fixed(cricket$ground, cricket$win_toss, case_insensitive=TRUE) | 
+                           stri_detect_fixed(cricket$team1, cricket$country, case_insensitive=TRUE) | 
+                           stri_detect_fixed(cricket$team2, cricket$country, case_insensitive=TRUE) |
+                           stri_detect_fixed(cricket$country, cricket$team1, case_insensitive=TRUE) | 
+                           stri_detect_fixed(cricket$country, cricket$team2, case_insensitive=TRUE)
+"
 
 "
 Winning a toss causes outcome including draws.
