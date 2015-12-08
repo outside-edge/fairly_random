@@ -29,37 +29,49 @@ About 3k matches. Don't like the 7% number. Touch too high, imho. But checked da
 cricket <- subset(match, win_toss!="")
 
 "
-Take out matches where there was no result
-Leaves us w/ 39672 rows
-"
-
-cricket <- subset(cricket, outcome!="No result" & win_game!="")
-
-"
 Team 2 missing in one case
 "
 cricket <- subset(cricket, team2!="")
 
+
+"
+Take out matches where there was no result
+Leaves us w/ 39672 rows
+"
+
+cricket <- subset(cricket, outcome!="No result")
+
+"
+Take out matches where no decision on who is to bowl/bat first is made
+"
+
+cricket <- subset(cricket, bat_or_bowl!="")
+
+
+"
+More recoding
+-----------------
+"
+
 "
 Drawn Matches
-6674 of them ~ 17%
+6673 of them ~ 17%
 "
 
 cricket$draw <- 1*(cricket$outcome=="Match drawn")
 
 # table(cricket$win_game[cricket$draw==1])
 
+# Win toss, win game
+cricket$team1_win_toss <- 1*(cricket$team1==cricket$win_toss)
+cricket$team2_win_toss <- 1*(cricket$team2==cricket$win_toss)
+cricket$team1_win_game <- 1*(cricket$team1==cricket$win_game)
+cricket$team2_win_game <- 1*(cricket$team2==cricket$win_game)
+
 "
 Country that won toss == Home Country
 International Matches Only --- as they are the easiest
-"
 
-cricket$country_data  <- cricket$country == cricket$team1 | cricket$country==cricket$team2
-cricket$home_toss_win <- cricket$country == cricket$win_toss
-sum(cricket$home_toss_win)/sum(cricket$country_data)
-binom.test(2433, 4749, p=.5)
-
-"
 # Less precise
 # Denominator ...?
 cricket$home_toss_win_t <- stri_detect_fixed(cricket$ground, cricket$win_toss, case_insensitive=TRUE) | 
@@ -67,37 +79,75 @@ cricket$home_toss_win_t <- stri_detect_fixed(cricket$ground, cricket$win_toss, c
                            stri_detect_fixed(cricket$team2, cricket$country, case_insensitive=TRUE) |
                            stri_detect_fixed(cricket$country, cricket$team1, case_insensitive=TRUE) | 
                            stri_detect_fixed(cricket$country, cricket$team2, case_insensitive=TRUE)
-"
+cricket$home_country_data  <- cricket$country == cricket$team1 | cricket$country==cricket$team2
 
 "
+
+
+"
+Melt the data
+Two rows per match
+"
+
+# "team1", "team2", "team1_id", "team2_id", "team1_rank", "team2_rank", "team1_win_toss", "team2_win_toss", "team1_win_game", "team2_win_game", 
+# "tossgame", "win_toss", "bat_or_bowl", "outcome", "win_game"
+
+# Match level vars: 
+match_cols <- c("url", "date", "day_n_night", "ground", "rain", "duckworth_lewis", "match_id", "type_of_match", "month", "year", "diff_ranks", 
+      "signed_diff_ranks", "ground_id", "country", "continent", "latitude", "longitude", "uniqueid", "draw")
+
+crickett <- data.frame(matchid=c(cricket$uniqueid, cricket$uniqueid))
+crickett <- merge(cricket, crickett, by.y="matchid", by.x="uniqueid")
+
+# team dat (suboptimal but ok)
+crickett$team      <- c(cricket$team1, cricket$team2)
+crickett$team_id   <- c(cricket$team1_id, cricket$team2_id)
+crickett$team_rank <- c(cricket$team1_rank, cricket$team2_rank)
+crickett$toss_win  <- c(cricket$team1_win_toss, cricket$team2_win_toss)
+crickett$game_win  <- c(cricket$team1_win_game, cricket$team2_win_game)
+
+# The game is drawn
+crickett$game_win[crickett$draw==1] <- .5
+
+crickett$bat_bowl  <- ifelse(crickett$toss_win, crickett$bat_or_bowl, ifelse(crickett$bat_or_bowl=="bowl", "bat", "bowl"))
+crickett$home_country <- crickett$country == crickett$team
+crickett$countries    <- crickett$country == crickett$team1 | crickett$country == crickett$team2
+
+"
+Analysis
+
+1. Do teams win more tosses at home?
+   Evidence from International Matches
+"
+
+homet <- with(crickett[crickett$countries==1,], xtabs( ~ home_country + toss_win))
+
+
+"
+Note: 
 Winning a toss causes outcome including draws.
 Imp. esp. for first class games
-
 "
 
-# Win toss then you lose
-cricket$team1_win_toss <- 1*(cricket$team1==cricket$win_toss)
-cricket$team2_win_toss <- 1*(cricket$team2==cricket$win_toss)
-cricket$team1_win_game <- 1*(cricket$team1==cricket$win_game)
-cricket$team2_win_game <- 1*(cricket$team2==cricket$win_game)
+wint <- xtabs( ~ crickett$game_win + crickett$toss_win)
+wint
+res  <- wint/colSums(wint)
+res
+res[3,2] - res[3,1]
 
-# Recode
-# Coding team that wins the toss wins the game
-cricket$tossgame <- 1*(cricket$win_game==cricket$win_toss)
-# The game is drawn
-cricket$tossgame[cricket$draw==1] <- .5
 
-" 
-Data Integrity Check
 
-table(cricket$win_game[!(cricket$team1_win_game | cricket$team2_win_game)])
+cricket$home_toss_win <- cricket$country == cricket$win_toss
+sum(cricket$home_toss_win)/sum(cricket$country_data)
+binom.test(2433, 4749, p=.5)
 
-# 137 Teams in db that haven't won a toss
-length(unique(c(cricket$team1, cricket$team2)))
-length(unique(cricket$win_toss))
-a <- unique(c(cricket$team1, cricket$team2))[!(unique(c(cricket$team1, cricket$team2)) %in% unique(cricket$win_toss))]
 
-"
+
+# Probab. of winning when you lose toss
+
+
+# Main Result
+table(cricket$tossgame)/nrow(cricket)
 
 # Results
 ddply(cricket,~type_of_match + day_n_night,summarise,mean=mean(tossgame))

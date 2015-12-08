@@ -97,3 +97,6 @@ match$signed_diff_ranks <- ifelse(as.character(match$team1)==as.character(match$
 match$ground <- gsub("^\\s+", "", trim.trailing(match$ground))
 # Add dat
 match[, c("ground_id", "country", "continent", "latitude", "longitude")] <- grounds[match(match$ground, grounds$ground), c("ground_id", "country", "continent", "latitude", "longitude")]
+
+# Let us add a unique ID
+match$uniqueid <- 1:nrow(match)
