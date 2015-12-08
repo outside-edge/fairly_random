@@ -13,6 +13,7 @@ source("scripts/04_merge_ranking_grounds_data.R")
 # Load libs
 library(plyr)
 library(stringi)
+library(xtable)
 
 # Read in data/ now sourcing it - see 04_merge_ranking_data
 # cricket <- read.csv("data/final_output.csv")
@@ -109,7 +110,7 @@ crickett$game_win  <- c(cricket$team1_win_game, cricket$team2_win_game)
 # The game is drawn
 crickett$game_win[crickett$draw==1] <- .5
 
-crickett$bat_bowl  <- ifelse(crickett$toss_win, crickett$bat_or_bowl, ifelse(crickett$bat_or_bowl=="bowl", "bat", "bowl"))
+crickett$bat_bowl     <- ifelse(crickett$toss_win, crickett$bat_or_bowl, ifelse(crickett$bat_or_bowl=="bowl", "bat", "bowl"))
 crickett$home_country <- crickett$country == crickett$team
 crickett$countries    <- crickett$country == crickett$team1 | crickett$country == crickett$team2
 
@@ -121,6 +122,8 @@ Analysis
 "
 
 homet <- with(crickett[crickett$countries==1,], xtabs( ~ home_country + toss_win))
+
+ddply(crickett, ~type_of_match + day_n_night, summarise, mean=mean(toss_win))
 
 
 "
@@ -135,24 +138,18 @@ res  <- wint/colSums(wint)
 res
 res[3,2] - res[3,1]
 
-
-
 cricket$home_toss_win <- cricket$country == cricket$win_toss
 sum(cricket$home_toss_win)/sum(cricket$country_data)
 binom.test(2433, 4749, p=.5)
 
+# By Type of Match
+ddply(crickett, ~type_of_match + toss_win, summarise, mean = mean(game_win), n = length(unique(uniqueid)))
+ddply(crickett, ~day_n_night + toss_win, summarise, mean = mean(game_win), n = length(unique(uniqueid)))
+ddply(crickett, ~duckworth_lewis + toss_win, summarise, mean = mean(game_win), n = length(unique(uniqueid)))
+ddply(crickett, ~type_of_match + day_n_night + toss_win, summarise, mean = mean(game_win), n = length(unique(uniqueid)))
+ddply(crickett, ~type_of_match + duckworth_lewis + toss_win, summarise, mean = mean(game_win), n = length(unique(uniqueid)))
 
-
-# Probab. of winning when you lose toss
-
-
-# Main Result
-table(cricket$tossgame)/nrow(cricket)
-
-# Results
-ddply(cricket,~type_of_match + day_n_night,summarise,mean=mean(tossgame))
-ddply(cricket,~type_of_match + duckworth_lewis,summarise,mean=mean(tossgame))
-
+with(crickett, glm())
 # Figs
 
 # Fig libs
