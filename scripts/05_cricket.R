@@ -298,7 +298,6 @@ ggsave("figs/winbyDL.pdf", width=5)
 
 "
 Win by Diff. in ranks
-
 Probab. of team that wins the toss winning conditional on signed ranking diff. w/ competing team
 
 "
@@ -339,8 +338,8 @@ ggsave("figs/winbyRank.pdf", width=7)
 Is there over time learning? If so, toss adv. would increase. 
 Or it could be that teams develop better strategies to offset toss advantage. 
 If you are going to come up short half the times, you develop strategies to counter that.
+But lots of moving parts for over time stuff. For instance, format is a concern. Certain formats not around earlier.
 " 
-
 
 
 "
@@ -349,6 +348,40 @@ For this - we would want to do Win/Win Toss - Win/Lose Toss to adjust for team p
 
 "
 
+small_set <- subset(crickett, name %in% c("India", "Australia", "West Indies", "England", "New Zealand", "Pakistan", "Sri Lanka"))
 
+by_country <- ddply(small_set, ~ name, summarise, diff = mean(wingame[wintoss==1]) - mean(wingame[wintoss==0]), count=length(unique(url)))
+by_country$diff <- by_country$diff*100
+
+ggplot(by_country, aes(x=name, y=diff)) + 
+geom_bar(stat = "identity", position = "identity", fill="#42c4c7") + 
+theme_minimal() + 
+xlab("") +
+scale_y_continuous(breaks=seq(-3, 7, 1), labels= paste0(nolead0s(seq(-3, 7, 1)), "%"), limits=c(-3, 7), name="") +
+theme(panel.grid.major.y = element_line(colour = "#e3e3e3", linetype = "dotted"),
+      panel.grid.minor.x = element_blank(),
+      panel.grid.major.x = element_line(colour = "#f7f7f7", linetype = "solid"),
+      panel.border       = element_blank(),
+      legend.position    = "bottom",
+      legend.text        = element_text(size=10),
+      legend.background  = element_rect(color="#ffffff"),
+      legend.key         = element_rect(color="#ffffff", fill="#ffffff"),
+      legend.key.size    = unit(.1,"cm"),
+      legend.margin      = unit(.2,"cm"),
+      title              = element_text(size=8),
+      axis.title         = element_text(size=8),
+      axis.text          = element_text(size=8),
+      axis.ticks.y       = element_blank(),
+      axis.ticks.x       = element_line(colour = '#f1f1f1'),
+      strip.text.x       = element_text(size=9),
+      legend.text        = element_text(size=8),
+      plot.margin        = unit(c(0,.5,.5,.5), "cm")) + 
+annotate("text", 
+   x = seq(1, 7, 1), 
+   y = ifelse(by_country$diff > 0, by_country$diff + .35, by_country$diff - .35), 
+   label = paste0(round(by_country$diff,2), "% \n (n =", format(by_country$count, big.mark=",", scientific=FALSE), ")"), 
+   colour = "#444444", 
+   size = 2.5)
+ggsave("figs/winbyCountry.pdf", width=6)
 
 
