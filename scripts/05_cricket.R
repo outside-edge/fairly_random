@@ -98,7 +98,7 @@ Two rows per match
 
 # Match level vars: 
 match_cols <- c("url", "date", "day_n_night", "ground", "rain", "duckworth_lewis", "match_id", "type_of_match", "month", "year", "diff_ranks", 
-      "signed_diff_ranks", "ground_id", "country", "continent", "latitude", "longitude", "uniqueid", "draw", "outcome")
+     "ground_id", "country", "continent", "latitude", "longitude", "uniqueid", "draw", "outcome")
 
 # Team cols, rename for gather/separate to work well
 team_cols <- c("team1", "team2", "team1_id", "team2_id", "team2_rank", "team1_rank", "team1_win_toss", "team2_win_toss", "team1_win_game", "team2_win_game")
@@ -119,6 +119,7 @@ crickett$home_country <- crickett$country == crickett$name
 
 crickett$wintoss <- as.numeric(crickett$wintoss)
 crickett$wingame <- as.numeric(crickett$wingame)
+crickett$signed_diff_ranks <- ifelse(crickett$var=="team1", crickett$diff_ranks, -crickett$diff_ranks)
 
 # Data Integrity
 ddply(crickett, ~type_of_match + day_n_night, summarise, mean=mean(wintoss))
@@ -250,7 +251,7 @@ ggsave("figs/winbyDayNight.pdf", width=6)
 Win by DL
 "
 
-ltd_dl <- ddply(ltdcricket,~type_of_match + duckworth_lewis,summarise, diff=mean(I(tossgame==1) - I(tossgame==0)), count=length(unique(url)))
+ltd_dl <- ddply(ltdcricket, ~type_of_match + duckworth_lewis, summarise, diff = mean(wingame[wintoss==1]) - mean(wingame[wintoss==0]), count=length(unique(url)))
 ltd_dl$diff <- ltd_dl$diff*100
 
 ggplot(ltd_dl, aes(x=type_of_match, y=diff, fill=factor(duckworth_lewis))) + 
@@ -263,21 +264,27 @@ theme(panel.grid.major.y = element_line(colour = "#e3e3e3", linetype = "dotted")
       panel.grid.minor.x = element_blank(),
       panel.grid.major.x = element_line(colour = "#f7f7f7", linetype = "solid"),
       panel.border       = element_blank(),
-      legend.position  	 = "bottom",
+      legend.position    = "bottom",
       legend.text        = element_text(size=10),
       legend.background  = element_rect(color="#ffffff"),
       legend.key         = element_rect(color="#ffffff", fill="#ffffff"),
       legend.key.size    = unit(.1,"cm"),
       legend.margin      = unit(.2,"cm"),
       title              = element_text(size=8),
-	  axis.title         = element_text(size=8),
-	  axis.text          = element_text(size=8),
-	  axis.ticks.y       = element_blank(),
-	  axis.ticks.x       = element_line(colour = '#f1f1f1'),
-	  strip.text.x       = element_text(size=9),
-	  legend.text        = element_text(size=8),
+      axis.title         = element_text(size=8),
+      axis.text          = element_text(size=8),
+      axis.ticks.y       = element_blank(),
+      axis.ticks.x       = element_line(colour = '#f1f1f1'),
+      strip.text.x       = element_text(size=9),
+      legend.text        = element_text(size=8),
       plot.margin        = unit(c(0,.5,.5,.5), "cm")) + 
-annotate("text", x = 4.2, y = .15, label = "zero", size=3) 
+annotate("text", 
+   x = seq(.75,4.25,.5), 
+   y = ifelse(ltd_dl$diff > 0, ltd_dl$diff+ .25, ltd_dl$diff-.25), 
+   label = paste("n=", ltd_dl$count), 
+   colour = "#444444", 
+   size = 2.5) + 
+annotate("text", y=.18, x=4.25, label="zero", size=3.5)
 ggsave("figs/winbyDL.pdf", width=5)
 
 
@@ -287,40 +294,37 @@ Win by Diff. in ranks
 Probab. of team that wins the toss winning conditional on signed ranking diff. w/ competing team
 
 "
+rankcricket <- subset(crickett, type_of_match %in% c("ODI", "TEST") & !is.na(signed_diff_ranks))
 
-# glm
-with(cricket, glm(tossgame==1 ~ signed_diff_ranks))
-
-rankcricket <- subset(cricket, type_of_match %in% c("ODI", "TEST"))
-win_rank <- ddply(rankcricket,~signed_diff_ranks,summarise, diff=mean(I(tossgame==1) - I(tossgame==0)), count=length(unique(url)))
-win_rank$diff <- win_rank$diff*100
-
-ggplot(win_rank, aes(x=signed_diff_ranks, y=diff)) + 
-geom_hline(yintercept=0, col="#aa0000", linetype="dashed", alpha=.3, size=.1) +
-geom_vline(yintercept=0, col="#aa0000", linetype="dashed", alpha=.5, size=.1) +
-geom_smooth(level = 0.80) +
+ggplot(rankcricket, aes(x=signed_diff_ranks, y=wingame*100, colour=factor(wintoss))) + 
+geom_hline(yintercept=50, col="#333333", linetype="dashed", alpha=.3, size=.1) +
+geom_vline(xintercept=0, col="#333333", linetype="dashed", alpha=.3, size=.1) +
+geom_smooth(se = FALSE, method = "loess", formula = y ~ x, span=.7, size = .5) +
 theme_minimal() + 
-scale_x_continuous(breaks=seq(-40, 40, 10), labels=nolead0s(seq(-40, 40, 10)), limits=c(-30, 30), name="Ranking Advantage of Team That Won the Toss") +
-scale_y_continuous(breaks=seq(-20, 15, 5), labels=nolead0s(seq(-20, 15, 5)), limits=c(-20, 15), name="") +
+scale_x_continuous(breaks=seq(-40, 45, 5), labels=nolead0s(seq(-40, 45, 5)), limits=c(-40, 45), name="Difference in Ranking Points") +
+scale_y_continuous(breaks=seq(0, 100, 10), labels=paste0(nolead0s(seq(0, 100, 10)), "%"), limits=c(0, 100), name="Percentage Won") +
+scale_colour_manual(values = c("#42c4c7","#FF9999")) + 
 theme(panel.grid.major.y = element_line(colour = "#e3e3e3", linetype = "dotted"),
       panel.grid.minor.x = element_blank(),
       panel.grid.major.x = element_line(colour = "#f7f7f7", linetype = "solid"),
       panel.border       = element_blank(),
-      legend.position  	 = "bottom",
+      legend.position    = "hide",
       legend.text        = element_text(size=10),
       legend.background  = element_rect(color="#ffffff"),
       legend.key         = element_rect(color="#ffffff", fill="#ffffff"),
       legend.key.size    = unit(.1,"cm"),
       legend.margin      = unit(.2,"cm"),
       title              = element_text(size=8),
-	  axis.title         = element_text(size=8),
-	  axis.text          = element_text(size=8),
-	  axis.ticks.y       = element_blank(),
-	  axis.ticks.x       = element_line(colour = '#f1f1f1'),
-	  strip.text.x       = element_text(size=9),
-	  legend.text        = element_text(size=8),
-      plot.margin        = unit(c(0,.5,.5,.5), "cm"))
-ggsave("figs/winbyRank.pdf", width=6)
+      axis.title         = element_text(size=8),
+      axis.text          = element_text(size=8),
+      axis.ticks.y       = element_blank(),
+      axis.ticks.x       = element_line(colour = '#f1f1f1'),
+      strip.text.x       = element_text(size=9),
+      legend.text        = element_text(size=8),
+      plot.margin        = unit(c(0,.5,.5,.5), "cm")) + 
+annotate("text", y=52, x=43, label="Lose Toss", size=3.5, colour="#42c4c7") +
+annotate("text", y=70, x=43, label="Win Toss", size=3.5, colour="#FF9999")
+ggsave("figs/winbyRank.pdf", width=7)
 
 
 "

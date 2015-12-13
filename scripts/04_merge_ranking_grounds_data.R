@@ -88,9 +88,6 @@ table(as.character(match$team2[!is.na(match$team2_rank)]))
 # Diff in ranking
 match$diff_ranks <- abs(match$team1_rank - match$team2_rank)
 
-# Signed diff
-match$signed_diff_ranks <- ifelse(as.character(match$team1)==as.character(match$win_toss), match$diff_ranks, -1*match$diff_ranks)
-
 # Add the grounds data
 
 # Trim leading and trailing spaces for grounds
