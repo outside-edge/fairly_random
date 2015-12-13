@@ -5,7 +5,7 @@
 "
 
 # setwd
-setwd(paste0(githubdir, "/cricket-stats"))
+setwd(paste0(githubdir, "cricket-stats"))
 
 # Source merge script
 source("scripts/04_merge_ranking_grounds_data.R")
@@ -69,6 +69,8 @@ cricket$team1_win_toss <- 1*(cricket$team1==cricket$win_toss)
 cricket$team2_win_toss <- 1*(cricket$team2==cricket$win_toss)
 cricket$team1_win_game <- 1*(cricket$team1==cricket$win_game)
 cricket$team2_win_game <- 1*(cricket$team2==cricket$win_game)
+cricket$team1_win_game[cricket$draw==1] <- .5
+cricket$team2_win_game[cricket$draw==1] <- .5
 
 "
 Country that won toss == Home Country
@@ -89,7 +91,6 @@ cricket$home_country_data  <- cricket$country == cricket$team1 | cricket$country
 # Home country wins toss
 cricket$home_wins_toss  <- ifelse(cricket$country==cricket$team1, cricket$team1_win_toss, cricket$team2_win_toss)
 # with(cricket[cricket$home_country_data==1,], mean(home_wins_toss))
-
 
 "
 Melt the data
@@ -112,7 +113,6 @@ crickett <- cricket %>% gather(key, value, starts_with('team')) %>% separate(key
 Recode, Fix Variable Type
 "
 # The game is drawn
-crickett$wingame[crickett$draw==1] <- .5
 
 crickett$bat_bowl     <- ifelse(crickett$wintoss, crickett$bat_or_bowl, ifelse(crickett$bat_or_bowl=="bowl", "bat", "bowl"))
 crickett$home_country <- crickett$country == crickett$name
@@ -177,8 +177,10 @@ cricket$type_of_match <- factor(cricket$type_of_match, levels=c("FC", "TEST", "L
 Win By Match Type
 "
 
-win_match_type <- ddply(crickett, ~type_of_match, summarise, diff = mean(wingame[wintoss==1]) - mean(wingame[wintoss==0]))
+win_match_type <- ddply(crickett, ~type_of_match, summarise, diff = mean(wingame[wintoss==1]) - mean(wingame[wintoss==0]), count=length(unique(url)))
 win_match_type$diff <- win_match_type$diff*100
+win_match_type$type_of_match <- factor(win_match_type$type_of_match, levels=c("FC", "TEST", "LISTA", "ODI", "T20", "T20I"))
+win_match_type <- win_match_type[order(win_match_type$type_of_match),]
 
 ggplot(win_match_type, aes(x=type_of_match, y=diff)) + 
 geom_bar(stat = "identity", fill="#42c4c7") + 
@@ -202,7 +204,13 @@ theme(panel.grid.major.y = element_line(colour = "#e3e3e3", linetype = "dotted")
       axis.ticks.x       = element_line(colour = '#f1f1f1'),
       strip.text.x       = element_text(size=9),
       legend.text        = element_text(size=8),
-      plot.margin        = unit(c(0,.5,.5,.5), "cm"))
+      plot.margin        = unit(c(0,.5,.5,.5), "cm")) + 
+annotate("text", 
+   x = seq(1, 6, 1), 
+   y = win_match_type$diff + .35, 
+   label = paste0(round(win_match_type$diff,2), "% \n (n =", format(win_match_type$count, big.mark=",", scientific=FALSE), ")"), 
+   colour = "#444444", 
+   size = 2.5)
 ggsave("figs/winbyType.pdf", width=7)
 
 "
@@ -240,9 +248,9 @@ theme(panel.grid.major.y = element_line(colour = "#e3e3e3", linetype = "dotted")
       legend.text        = element_text(size=8),
       plot.margin        = unit(c(0,.5,.5,.5), "cm")) + 
 annotate("text", 
-   x = seq(.75,4.25,.5), 
-   y = ifelse(ltd_day_n_night$diff > 0, ltd_day_n_night$diff+ .5, ltd_day_n_night$diff-.5), 
-   label = paste("n=", ltd_day_n_night$count), 
+   x = seq(.75, 4.25, .5), 
+   y = ifelse(ltd_day_n_night$diff > 0, ltd_day_n_night$diff + .7, ltd_day_n_night$diff - .65), 
+   label = paste0(round(ltd_day_n_night$diff,2), "% \n (n =", format(ltd_day_n_night$count, big.mark=",", scientific=FALSE), ")"), 
    colour = "#444444", 
    size = 2.5)
 ggsave("figs/winbyDayNight.pdf", width=6)
@@ -281,7 +289,7 @@ theme(panel.grid.major.y = element_line(colour = "#e3e3e3", linetype = "dotted")
 annotate("text", 
    x = seq(.75,4.25,.5), 
    y = ifelse(ltd_dl$diff > 0, ltd_dl$diff+ .25, ltd_dl$diff-.25), 
-   label = paste("n=", ltd_dl$count), 
+   label = paste0(round(ltd_dl$diff,2), "% \n (n =", format(ltd_dl$count, big.mark=",", scientific=FALSE), ")"), 
    colour = "#444444", 
    size = 2.5) + 
 annotate("text", y=.18, x=4.25, label="zero", size=3.5)

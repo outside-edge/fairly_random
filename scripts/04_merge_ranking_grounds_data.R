@@ -89,7 +89,6 @@ table(as.character(match$team2[!is.na(match$team2_rank)]))
 match$diff_ranks <- abs(match$team1_rank - match$team2_rank)
 
 # Add the grounds data
-
 # Trim leading and trailing spaces for grounds
 match$ground <- gsub("^\\s+", "", trim.trailing(match$ground))
 # Add dat
