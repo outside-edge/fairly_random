@@ -121,7 +121,8 @@ crickett$wintoss <- as.numeric(crickett$wintoss)
 crickett$wingame <- as.numeric(crickett$wingame)
 
 # Data Integrity
-# ddply(crickett, ~type_of_match + day_n_night, summarise, mean=mean(wintoss))
+ddply(crickett, ~type_of_match + day_n_night, summarise, mean=mean(wintoss))
+with(crickett, xtabs( ~ type_of_match + wingame))
 
 "
 Analysis
@@ -208,8 +209,9 @@ Win by Day/Night
 No test or first-class
 "
 
-ltdcricket <- subset(cricket, type_of_match!="FC" & type_of_match!="TEST")
-ltd_day_n_night <- ddply(ltdcricket,~type_of_match + day_n_night,summarise, diff=mean(I(tossgame==1) - I(tossgame==0)), count=length(unique(url)))
+ltdcricket <- subset(crickett, type_of_match!="FC" & type_of_match!="TEST")
+
+ltd_day_n_night <- ddply(ltdcricket, ~type_of_match + day_n_night, summarise, diff = mean(wingame[wintoss==1]) - mean(wingame[wintoss==0]), count=length(unique(url)))
 ltd_day_n_night$diff <- ltd_day_n_night$diff*100
 
 ggplot(ltd_day_n_night, aes(x=type_of_match, y=diff, fill=factor(day_n_night))) + 
@@ -217,27 +219,32 @@ geom_bar(stat="identity", position="dodge") +
 theme_minimal() + 
 xlab("") +
 scale_fill_discrete(name="", labels=c(" Day   ", " Day and Night")) + 
-scale_y_continuous(breaks=seq(-7, 8, 1), labels=nolead0s(seq(-7, 8, 1)), limits=c(-7, 8), name="") +
+scale_y_continuous(breaks=seq(-10, 10, 1), labels= paste0(nolead0s(seq(-10, 10, 1)), "%"), limits=c(-10, 10.5), name="") +
 theme(panel.grid.major.y = element_line(colour = "#e3e3e3", linetype = "dotted"),
       panel.grid.minor.x = element_blank(),
       panel.grid.major.x = element_line(colour = "#f7f7f7", linetype = "solid"),
       panel.border       = element_blank(),
-      legend.position  	 = "bottom",
+      legend.position    = "bottom",
       legend.text        = element_text(size=10),
       legend.background  = element_rect(color="#ffffff"),
       legend.key         = element_rect(color="#ffffff", fill="#ffffff"),
       legend.key.size    = unit(.1,"cm"),
       legend.margin      = unit(.2,"cm"),
       title              = element_text(size=8),
-	  axis.title         = element_text(size=8),
-	  axis.text          = element_text(size=8),
-	  axis.ticks.y       = element_blank(),
-	  axis.ticks.x       = element_line(colour = '#f1f1f1'),
-	  strip.text.x       = element_text(size=9),
-	  legend.text        = element_text(size=8),
-      plot.margin        = unit(c(0,.5,.5,.5), "cm"))
-
-ggsave("figs/winbyDayNight.pdf")
+      axis.title         = element_text(size=8),
+      axis.text          = element_text(size=8),
+      axis.ticks.y       = element_blank(),
+      axis.ticks.x       = element_line(colour = '#f1f1f1'),
+      strip.text.x       = element_text(size=9),
+      legend.text        = element_text(size=8),
+      plot.margin        = unit(c(0,.5,.5,.5), "cm")) + 
+annotate("text", 
+   x = seq(.75,4.25,.5), 
+   y = ifelse(ltd_day_n_night$diff > 0, ltd_day_n_night$diff+ .5, ltd_day_n_night$diff-.5), 
+   label = paste("n=", ltd_day_n_night$count), 
+   colour = "#444444", 
+   size = 2.5)
+ggsave("figs/winbyDayNight.pdf", width=6)
 
 "
 Win by DL
