@@ -97,22 +97,21 @@ Two rows per match
 match_cols <- c("url", "date", "day_n_night", "ground", "rain", "duckworth_lewis", "match_id", "type_of_match", "month", "year", "diff_ranks", 
       "signed_diff_ranks", "ground_id", "country", "continent", "latitude", "longitude", "uniqueid", "draw")
 
-crickett <- data.frame(matchid=c(cricket$uniqueid, cricket$uniqueid))
-crickett <- merge(cricket, crickett, by.y="matchid", by.x="uniqueid")
+team_cols <- c("team1", "team2", "team1_id", "team2_id", "team2_rank", "team1_rank", "team1_win_toss", "team2_win_toss", "team1_win_game", "team2_win_game")
+rename_cols <- c("team1.name", "team2.name", "team1.id", "team2.id", "team2.rank", "team1.rank", "team1.wintoss", "team2.wintoss", "team1.wingame", "team2.wingame")
+names(cricket)[names(cricket) %in% team_cols] <- rename_cols
 
-# team dat (suboptimal but ok)
-crickett$team      <- c(cricket$team1, cricket$team2)
-crickett$team_id   <- c(cricket$team1_id, cricket$team2_id)
-crickett$team_rank <- c(cricket$team1_rank, cricket$team2_rank)
-crickett$toss_win  <- c(cricket$team1_win_toss, cricket$team2_win_toss)
-crickett$game_win  <- c(cricket$team1_win_game, cricket$team2_win_game)
+crickett <- cricket %>% gather(key, value, starts_with('team')) %>% separate(key, c("var", "col")) %>% arrange(url) %>% spread(col, value)
 
 # The game is drawn
-crickett$game_win[crickett$draw==1] <- .5
+crickett$wingame[crickett$draw==1] <- .5
 
-crickett$bat_bowl     <- ifelse(crickett$toss_win, crickett$bat_or_bowl, ifelse(crickett$bat_or_bowl=="bowl", "bat", "bowl"))
-crickett$home_country <- crickett$country == crickett$team
-crickett$countries    <- crickett$country == crickett$team1 | crickett$country == crickett$team2
+crickett$bat_bowl     <- ifelse(crickett$wintoss, crickett$bat_or_bowl, ifelse(crickett$bat_or_bowl=="bowl", "bat", "bowl"))
+crickett$home_country <- crickett$country == crickett$name
+# crickett$countries    <- crickett$country == crickett$team1 | crickett$country == crickett$team2
+
+crickett$wintoss <- as.numeric(crickett$wintoss)
+crickett$wingame <- as.numeric(crickett$wingame)
 
 "
 Analysis
@@ -121,9 +120,9 @@ Analysis
    Evidence from International Matches
 "
 
-homet <- with(crickett[crickett$countries==1,], xtabs( ~ home_country + toss_win))
+homet <- with(crickett, xtabs( ~ home_country + wintoss))
 
-ddply(crickett, ~type_of_match + day_n_night, summarise, mean=mean(toss_win))
+ddply(crickett, ~type_of_match + day_n_night, summarise, mean=mean(wintoss))
 
 
 "
@@ -132,7 +131,7 @@ Winning a toss causes outcome including draws.
 Imp. esp. for first class games
 "
 
-wint <- xtabs( ~ crickett$game_win + crickett$toss_win)
+wint <- xtabs( ~ crickett$wingame + crickett$wintoss)
 wint
 res  <- wint/colSums(wint)
 res
@@ -143,11 +142,11 @@ sum(cricket$home_toss_win)/sum(cricket$country_data)
 binom.test(2433, 4749, p=.5)
 
 # By Type of Match
-ddply(crickett, ~type_of_match + toss_win, summarise, mean = mean(game_win), n = length(unique(uniqueid)))
-ddply(crickett, ~day_n_night + toss_win, summarise, mean = mean(game_win), n = length(unique(uniqueid)))
-ddply(crickett, ~duckworth_lewis + toss_win, summarise, mean = mean(game_win), n = length(unique(uniqueid)))
-ddply(crickett, ~type_of_match + day_n_night + toss_win, summarise, mean = mean(game_win), n = length(unique(uniqueid)))
-ddply(crickett, ~type_of_match + duckworth_lewis + toss_win, summarise, mean = mean(game_win), n = length(unique(uniqueid)))
+ddply(crickett, ~type_of_match + wintoss, summarise, mean = mean(wingame==1), n = length(unique(uniqueid)),  se=2*100*sqrt(mean*(1-mean)/n))
+ddply(crickett, ~day_n_night +   wintoss, summarise,   mean = mean(wingame==1), n = length(unique(uniqueid)), se=2*100*sqrt(mean*(1-mean)/n))
+ddply(crickett, ~duckworth_lewis + toss_win, summarise, mean = mean(game_win==1), n = length(unique(uniqueid)), se=2*100*sqrt(mean*(1-mean)/n))
+ddply(crickett, ~type_of_match + day_n_night + toss_win, summarise, mean = mean(game_win==1), n = length(unique(uniqueid)),  se=2*100*sqrt(mean*(1-mean)/n))
+ddply(crickett, ~type_of_match + duckworth_lewis + toss_win, summarise, mean = mean(game_win==1), n = length(unique(uniqueid)),  se=2*100*sqrt(mean*(1-mean)/n))
 
 with(crickett, glm())
 # Figs
@@ -164,8 +163,7 @@ cricket$type_of_match <- factor(cricket$type_of_match, levels=c("FC", "TEST", "L
 Win By Match Type
 "
 
-win_match_type <- ddply(cricket,~type_of_match,summarise, diff=mean(I(tossgame==1) - I(tossgame==0)), count=length(unique(url)))
-win_match_type$diff <- win_match_type$diff*100 # convert to %
+win_match_type <- ddply(crickett, ~type_of_match + toss_win, summarise, perc = mean(game_win)*100, n = length(unique(uniqueid)))
 
 ggplot(win_match_type, aes(type_of_match, diff)) + 
 geom_bar(stat = "identity", position = "identity", fill="#42C4C7") + 
