@@ -306,15 +306,14 @@ We have to separate by ODI and Tests also
 
 "
 
-rankcricket_odi <- subset(crickett, type_of_match %in% c("ODI") & !is.na(signed_diff_ranks))
-rankcricket_test <- subset(crickett, type_of_match %in% c("TEST") & !is.na(signed_diff_ranks))
+rankcricket <- subset(crickett, type_of_match %in% c("ODI", "TEST") & !is.na(signed_diff_ranks))
 
-ggplot(rankcricket_odi, aes(x=signed_diff_ranks, y=wingame*100, colour=factor(wintoss))) + 
+ggplot(rankcricket, aes(x=signed_diff_ranks, y=wingame*100, colour=factor(wintoss))) + 
 geom_hline(yintercept=50, col="#333333", linetype="dashed", alpha=.3, size=.1) +
 geom_vline(xintercept=0, col="#333333", linetype="dashed", alpha=.3, size=.1) +
 geom_smooth(se = FALSE, method = "loess", formula = y ~ x, span=.7, size = .5) +
 theme_minimal() + 
-scale_x_continuous(breaks=seq(-40, 45, 5), labels=nolead0s(seq(-40, 45, 5)), limits=c(-40, 45), name="Difference in Ranking Points") +
+scale_x_continuous(breaks=seq(-40, 47, 10), labels=nolead0s(seq(-40, 47, 10)), limits=c(-40, 47), name="Difference in Ranking Points") +
 scale_y_continuous(breaks=seq(0, 100, 10), labels=paste0(nolead0s(seq(0, 100, 10)), "%"), limits=c(0, 100), name="Percentage Won") +
 scale_colour_manual(values = c("#42c4c7","#FF9999")) + 
 theme(panel.grid.major.y = element_line(colour = "#e3e3e3", linetype = "dotted"),
@@ -336,38 +335,10 @@ theme(panel.grid.major.y = element_line(colour = "#e3e3e3", linetype = "dotted")
       legend.text        = element_text(size=8),
       plot.margin        = unit(c(0,.5,.5,.5), "cm")) + 
 annotate("text", y=52, x=43, label="Lose Toss", size=3.5, colour="#42c4c7") +
-annotate("text", y=70, x=43, label="Win Toss", size=3.5, colour="#FF9999")
-ggsave("figs/winbyRank_odi.pdf", width=7)
+annotate("text", y=70, x=43, label="Win Toss", size=3.5, colour="#FF9999") + 
+facet_grid(. ~ type_of_match)
 
-ggplot(rankcricket_test, aes(x=signed_diff_ranks, y=wingame*100, colour=factor(wintoss))) + 
-geom_hline(yintercept=50, col="#333333", linetype="dashed", alpha=.3, size=.1) +
-geom_vline(xintercept=0, col="#333333", linetype="dashed", alpha=.3, size=.1) +
-geom_smooth(se = FALSE, method = "loess", formula = y ~ x, span=.7, size = .5) +
-theme_minimal() + 
-scale_x_continuous(breaks=seq(-40, 45, 5), labels=nolead0s(seq(-40, 45, 5)), limits=c(-40, 45), name="Difference in Ranking Points") +
-scale_y_continuous(breaks=seq(0, 100, 10), labels=paste0(nolead0s(seq(0, 100, 10)), "%"), limits=c(0, 100), name="Percentage Won") +
-scale_colour_manual(values = c("#42c4c7","#FF9999")) + 
-theme(panel.grid.major.y = element_line(colour = "#e3e3e3", linetype = "dotted"),
-      panel.grid.minor.x = element_blank(),
-      panel.grid.major.x = element_line(colour = "#f7f7f7", linetype = "solid"),
-      panel.border       = element_blank(),
-      legend.position    = "hide",
-      legend.text        = element_text(size=10),
-      legend.background  = element_rect(color="#ffffff"),
-      legend.key         = element_rect(color="#ffffff", fill="#ffffff"),
-      legend.key.size    = unit(.1,"cm"),
-      legend.margin      = unit(.2,"cm"),
-      title              = element_text(size=8),
-      axis.title         = element_text(size=8),
-      axis.text          = element_text(size=8),
-      axis.ticks.y       = element_blank(),
-      axis.ticks.x       = element_line(colour = '#f1f1f1'),
-      strip.text.x       = element_text(size=9),
-      legend.text        = element_text(size=8),
-      plot.margin        = unit(c(0,.5,.5,.5), "cm")) + 
-annotate("text", y=52, x=43, label="Lose Toss", size=3.5, colour="#42c4c7") +
-annotate("text", y=70, x=43, label="Win Toss", size=3.5, colour="#FF9999")
-ggsave("figs/winbyRank_tests.pdf", width=7)
+ggsave("figs/winbyRank.pdf", width=8)
 
 "
 Is there over time learning? If so, toss adv. would increase. 
