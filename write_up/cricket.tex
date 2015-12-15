@@ -108,7 +108,11 @@ In limited over matches sometimes weather intervenes significantly after the mat
 \label{fig:dl}
 \end{figure}
 
-Winning a toss ought to matter the most when two closely matched teams are playing. What good would winning the toss do if you are matched with a team you have no chance beating. To study this, we collected ranking data. The ranking data are only available for international teams. And for reasons to do with convenience, we limited ourselves to collecting data on one-day internationals and tests between the earliest starting point and 2013. (These ranking data are updated monthly.) We measure how closely matched the teams are by simply subtracting the ranking points of team that lost the toss from the team that won it. The results are expected but new. As Figure ~\ref{fig:ranks}, there is a sharp curve around 0. When closely matched teams win, the team that wins the toss has a consistent advantage over the team that loses the toss.
+Winning the toss ought to matter the most when the difference between the quality of the teams that are playing is the least. Similarly, it is unlikely that winning the toss would change who wins the game when two ill-matched teams are playing. To study this, we collected data on team quality. The ICC publishes team ratings for international test and one-day teams each month.\footnote{For details about how the ICC produces these ratings, see \href{http://icc-live.s3.amazonaws.com/cms/media/about_docs/536b1a48c16e5-Reliance\%20ICC\%20ODI\%20Team\%20Rankings\%20FAQs\%202014.pdf}{ICC Rating FAQs}.} Ratings of the ODI teams have been published since 1981, and of test teams, since 1952. Of the entire dataset that spans 1981-today and 1952-today, we only have we have data till 2013.\footnote{The format in which the ICC publishes the ratings changed in 2013. And scraping the latter data posed additional hurdles. We decided that the additional effort wasn't worth the small amount of additional data.} 
+
+Team ratings range from 0 to 143 in our data. So, for instance, Bangladesh had a rating of 0 in tests for most of 2002 and 2003. And Australia in 2007 twice held a rating of 143. We measure how closely matched the teams by differencing the ranking points of one team from the other. We interact this with whether or not the team won the toss. 
+
+The results are expected, but new. As Figure ~\ref{fig:ranks}, there is a sharp curve around 0. When closely matched teams win, the team that wins the toss has a consistent advantage over the team that loses the toss.
 
 \begin{figure}[htbp]
 \centering

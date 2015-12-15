@@ -68,6 +68,7 @@ odi_ranks$month_abb <- month.abb[odi_ranks$month]
 test_ranks$month_abb <- month.abb[test_ranks$month]
 
 # Uniques for odi and test
+# It is not ranking but rating data (higher the better)
 odi_ranks$unique  <- paste0("ODI", odi_ranks$country,  odi_ranks$month_abb,  odi_ranks$year)
 test_ranks$unique <- paste0("TEST", test_ranks$country, test_ranks$month_abb, test_ranks$year)
 
