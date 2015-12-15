@@ -376,6 +376,47 @@ If you are going to come up short half the times, you develop strategies to coun
 But lots of moving parts for over time stuff. For instance, format is a concern. Certain formats not around earlier.
 " 
 
+"
+Early English Season
+"
+eng_season <- subset(crickett, country=="England")
+
+by_month <- ddply(eng_season, ~ month, summarise, diff = mean(wingame[wintoss==1]) - mean(wingame[wintoss==0]), count=length(unique(url)))
+by_month <- subset(by_month, month!='Mar') # only 5 entries
+by_month$month <- factor(by_month$month, month.abb, ordered=T)
+by_month$diff <- by_month$diff*100
+by_month <- by_month[order(by_month$month),]
+
+ggplot(by_month, aes(x=month, y=diff)) + 
+geom_bar(stat = "identity", position = "identity", fill="#42c4c7") + 
+theme_minimal() + 
+xlab("") +
+scale_y_continuous(breaks=seq(-5, 5, 1), labels= paste0(nolead0s(seq(-5, 5, 1)), "%"), limits=c(-5, 5), name="") +
+theme(panel.grid.major.y = element_line(colour = "#e3e3e3", linetype = "dotted"),
+      panel.grid.minor.x = element_blank(),
+      panel.grid.major.x = element_line(colour = "#f7f7f7", linetype = "solid"),
+      panel.border       = element_blank(),
+      legend.position    = "bottom",
+      legend.text        = element_text(size=10),
+      legend.background  = element_rect(color="#ffffff"),
+      legend.key         = element_rect(color="#ffffff", fill="#ffffff"),
+      legend.key.size    = unit(.1,"cm"),
+      legend.margin      = unit(.2,"cm"),
+      title              = element_text(size=8),
+      axis.title         = element_text(size=8),
+      axis.text          = element_text(size=8),
+      axis.ticks.y       = element_blank(),
+      axis.ticks.x       = element_line(colour = '#f1f1f1'),
+      strip.text.x       = element_text(size=9),
+      legend.text        = element_text(size=8),
+      plot.margin        = unit(c(0,.5,.5,.5), "cm")) + 
+annotate("text", 
+   x = seq(1, 6, 1), 
+   y = ifelse(by_month$diff > 0, by_month$diff + .35, by_month$diff - .35), 
+   label = paste0(round(by_month$diff,2), "% \n (n =", format(by_month$count, big.mark=",", scientific=FALSE), ")"), 
+   colour = "#444444", 
+   size = 2.5)
+ggsave("figs/winbyMonthEngland.pdf", width=6)
 
 "
 Toss Adv. by Country - Are some countries better than others. Hard to say in some ways as competing against v. diff. teams. 
