@@ -10,13 +10,14 @@ setwd(paste0(githubdir, "/cricket-stats"))
 # Don't want to deal with factors
 options(StringsAsFactors=F)
 
-# Load ranking data
+# Load and merge ranking data
 odi_ranks  <- read.csv("data/rankings_odi.csv")
 test_ranks <- read.csv("data/rankings_test.csv")
+ranks <- rbind(odi_ranks, test_ranks)
+ranks$format <- ifelse(ranks$format=="odi", "ODI", "TEST")
 
 # Ground
 grounds <- read.csv("data/grounds.csv")
-
 
 "
 Notes: ODI/Test ranks data till 2013
@@ -64,27 +65,23 @@ match$team1_id <- with(match, paste0(type_of_match, team1, month, year))
 match$team2_id <- with(match, paste0(type_of_match, team2, month, year))
 
 # Month handling for odi and test rank data (just convert to month abb. here as data cleaner)
-odi_ranks$month_abb <- month.abb[odi_ranks$month]
-test_ranks$month_abb <- month.abb[test_ranks$month]
+ranks$month_abb  <- month.abb[ranks$month]
 
 # Uniques for odi and test
 # It is not ranking but rating data (higher the better)
-odi_ranks$unique  <- paste0("ODI", odi_ranks$country,  odi_ranks$month_abb,  odi_ranks$year)
-test_ranks$unique <- paste0("TEST", test_ranks$country, test_ranks$month_abb, test_ranks$year)
+ranks$unique  <- paste0(ranks$format, ranks$country,  ranks$month_abb,  ranks$year)
 
 # Bring out data 
 match$team1_rank <- match$team2_rank <- NA
-odi  <- odi_ranks$rating[match(match$team1_id, odi_ranks$unique)]
-test <- test_ranks$rating[match(match$team1_id, test_ranks$unique)]
-match$team1_rank <- ifelse(is.na(odi), test, odi)
-odi  <- odi_ranks$rating[match(match$team2_id, odi_ranks$unique)]
-test <- test_ranks$rating[match(match$team2_id, test_ranks$unique)]
-match$team2_rank <- ifelse(is.na(odi), test, odi)
+match$team1_rank  <- ranks$rating[match(match$team1_id, ranks$unique)]
+match$team2_rank  <- ranks$rating[match(match$team2_id, ranks$unique)]
 
 # Adhoc data integrity check 
 match$team1_rank[match$type_of_match=='ODI' & match$month=='Apr']
-table(as.character(match$team1[!is.na(match$team1_rank)]))
-table(as.character(match$team2[!is.na(match$team2_rank)]))
+table(match$team1[!is.na(match$team1_rank)])
+table(match$team2[!is.na(match$team2_rank)])
+range(match$team1_rank[match$team1=="Bangladesh"], na.rm=T)
+range(match$team1_rank[match$team1=="Australia"], na.rm=T)
 
 # Diff in ranking
 match$diff_ranks <- abs(match$team1_rank - match$team2_rank)

@@ -119,11 +119,19 @@ crickett$home_country <- crickett$country == crickett$name
 
 crickett$wintoss <- as.numeric(crickett$wintoss)
 crickett$wingame <- as.numeric(crickett$wingame)
-crickett$signed_diff_ranks <- ifelse(crickett$var=="team1", crickett$diff_ranks, -crickett$diff_ranks)
+crickett$diff_ranks <- as.numeric(crickett$diff_ranks)
 
-# Data Integrity
+crickett$signed_diff_ranks <- ifelse(crickett$var=="team1", crickett$diff_ranks, -1*crickett$diff_ranks)
+
+"
+Ad Hoc Data Integrity Checks
+"
+
 ddply(crickett, ~type_of_match + day_n_night, summarise, mean=mean(wintoss))
 with(crickett, xtabs( ~ type_of_match + wingame))
+
+crickett$name[!is.na(crickett$signed_diff_ranks) & crickett$signed_diff_ranks < -110]
+crickett$name[!is.na(crickett$signed_diff_ranks) & crickett$signed_diff_ranks > 110]
 
 "
 Analysis
@@ -168,10 +176,32 @@ ddply(crickett, ~type_of_match + day_n_night, summarise, mean = mean(wingame==1)
 # By Type of Match, D/L
 ddply(crickett, ~type_of_match + duckworth_lewis, summarise, mean = mean(wingame==1), n = length(unique(uniqueid)),  se=2*100*sqrt(mean*(1-mean)/n))
 
-# Fig libs
+# Figs
+# ~~~~~~~~~~
+
+# Fig Libs
 library(ggplot2)
 library(grid)
 library(goji)
+
+theme_base <- theme(panel.grid.major.y = element_line(colour = "#e3e3e3", linetype = "dotted"),
+      panel.grid.minor.x = element_blank(),
+      panel.grid.major.x = element_line(colour = "#f7f7f7", linetype = "solid"),
+      panel.border       = element_blank(),
+      legend.position    = "bottom",
+      legend.text        = element_text(size=10),
+      legend.background  = element_rect(color="#ffffff"),
+      legend.key         = element_rect(color="#ffffff", fill="#ffffff"),
+      legend.key.size    = unit(.1,"cm"),
+      legend.margin      = unit(.2,"cm"),
+      title              = element_text(size=8),
+      axis.title         = element_text(size=8),
+      axis.text          = element_text(size=8),
+      axis.ticks.y       = element_blank(),
+      axis.ticks.x       = element_line(colour = '#f1f1f1'),
+      strip.text.x       = element_text(size=9),
+      legend.text        = element_text(size=8),
+      plot.margin        = unit(c(0,.5,.5,.5), "cm"))
 
 # For figs - let us get type of match is nicer factor order
 cricket$type_of_match <- factor(cricket$type_of_match, levels=c("FC", "TEST", "LISTA", "ODI", "T20", "T20I"))
@@ -189,25 +219,8 @@ ggplot(win_match_type, aes(x=type_of_match, y=diff)) +
 geom_bar(stat = "identity", fill="#42c4c7") + 
 theme_minimal() + 
 xlab("") +
-scale_y_continuous(breaks=seq(0, 10, 1), labels= paste0(nolead0s(seq(0, 10, 1)), "%"), limits=c(0, 10), name="") +
-theme(panel.grid.major.y = element_line(colour = "#e3e3e3", linetype = "dotted"),
-      panel.grid.minor.x = element_blank(),
-      panel.grid.major.x = element_line(colour = "#f7f7f7", linetype = "solid"),
-      panel.border       = element_blank(),
-      legend.position    = "bottom",
-      legend.text        = element_text(size=10),
-      legend.background  = element_rect(color="#ffffff"),
-      legend.key         = element_rect(color="#ffffff", fill="#ffffff"),
-      legend.key.size    = unit(.1,"cm"),
-      legend.margin      = unit(.2,"cm"),
-      title              = element_text(size=8),
-      axis.title         = element_text(size=8),
-      axis.text          = element_text(size=8),
-      axis.ticks.y       = element_blank(),
-      axis.ticks.x       = element_line(colour = '#f1f1f1'),
-      strip.text.x       = element_text(size=9),
-      legend.text        = element_text(size=8),
-      plot.margin        = unit(c(0,.5,.5,.5), "cm")) + 
+scale_y_continuous(breaks=seq(0, 7, 1), labels= paste0(nolead0s(seq(0, 7, 1)), "%"), limits=c(0, 7), name="") +
+theme_base + 
 annotate("text", 
    x = seq(1, 6, 1), 
    y = win_match_type$diff + .35, 
@@ -232,24 +245,7 @@ theme_minimal() +
 xlab("") +
 scale_fill_discrete(name="", labels=c(" Day   ", " Day and Night")) + 
 scale_y_continuous(breaks=seq(-10, 10, 1), labels= paste0(nolead0s(seq(-10, 10, 1)), "%"), limits=c(-10, 10.5), name="") +
-theme(panel.grid.major.y = element_line(colour = "#e3e3e3", linetype = "dotted"),
-      panel.grid.minor.x = element_blank(),
-      panel.grid.major.x = element_line(colour = "#f7f7f7", linetype = "solid"),
-      panel.border       = element_blank(),
-      legend.position    = "bottom",
-      legend.text        = element_text(size=10),
-      legend.background  = element_rect(color="#ffffff"),
-      legend.key         = element_rect(color="#ffffff", fill="#ffffff"),
-      legend.key.size    = unit(.1,"cm"),
-      legend.margin      = unit(.2,"cm"),
-      title              = element_text(size=8),
-      axis.title         = element_text(size=8),
-      axis.text          = element_text(size=8),
-      axis.ticks.y       = element_blank(),
-      axis.ticks.x       = element_line(colour = '#f1f1f1'),
-      strip.text.x       = element_text(size=9),
-      legend.text        = element_text(size=8),
-      plot.margin        = unit(c(0,.5,.5,.5), "cm")) + 
+theme_base + 
 annotate("text", 
    x = seq(.75, 4.25, .5), 
    y = ifelse(ltd_day_n_night$diff > 0, ltd_day_n_night$diff + .7, ltd_day_n_night$diff - .65), 
@@ -271,24 +267,7 @@ theme_minimal() +
 xlab("") +
 scale_fill_discrete(name="", labels=c(" No D/L   ", " Duckworth Lewis")) + 
 scale_y_continuous(breaks=seq(-1, 7, 1), labels=nolead0s(seq(-1, 7, 1)), limits=c(-1, 7), name="") +
-theme(panel.grid.major.y = element_line(colour = "#e3e3e3", linetype = "dotted"),
-      panel.grid.minor.x = element_blank(),
-      panel.grid.major.x = element_line(colour = "#f7f7f7", linetype = "solid"),
-      panel.border       = element_blank(),
-      legend.position    = "bottom",
-      legend.text        = element_text(size=10),
-      legend.background  = element_rect(color="#ffffff"),
-      legend.key         = element_rect(color="#ffffff", fill="#ffffff"),
-      legend.key.size    = unit(.1,"cm"),
-      legend.margin      = unit(.2,"cm"),
-      title              = element_text(size=8),
-      axis.title         = element_text(size=8),
-      axis.text          = element_text(size=8),
-      axis.ticks.y       = element_blank(),
-      axis.ticks.x       = element_line(colour = '#f1f1f1'),
-      strip.text.x       = element_text(size=9),
-      legend.text        = element_text(size=8),
-      plot.margin        = unit(c(0,.5,.5,.5), "cm")) + 
+theme_base + 
 annotate("text", 
    x = seq(.75,4.25,.5), 
    y = ifelse(ltd_dl$diff > 0, ltd_dl$diff+ .25, ltd_dl$diff-.25), 
@@ -298,47 +277,34 @@ annotate("text",
 annotate("text", y=.18, x=4.25, label="zero", size=3.5)
 ggsave("figs/winbyDL.pdf", width=5)
 
-
 "
 Win by Diff. in ranks
 Probab. of team that wins the toss winning conditional on signed ranking diff. w/ competing team
 We have to separate by ODI and Tests also
 
+Get a a sense of the data
+crickett$name[!is.na(crickett$signed_diff_ranks) & crickett$signed_diff_ranks < -110]
+crickett$name[!is.na(crickett$signed_diff_ranks) & crickett$signed_diff_ranks > 110]
 "
 
-rankcricket <- subset(crickett, type_of_match %in% c("ODI", "TEST") & !is.na(signed_diff_ranks))
+rankcricket <- subset(crickett, !is.na(signed_diff_ranks))
+rankcricket$wingamer <- as.numeric(rankcricket$wingame)*100
 
-ggplot(rankcricket, aes(x=signed_diff_ranks, y=wingame*100, colour=factor(wintoss))) + 
-geom_hline(yintercept=50, col="#333333", linetype="dashed", alpha=.3, size=.1) +
+ggplot(rankcricket, aes(x=signed_diff_ranks, y=wingamer, colour=factor(wintoss))) + 
+geom_smooth(method="loess", span=.80, se=F) + 
 geom_vline(xintercept=0, col="#333333", linetype="dashed", alpha=.3, size=.1) +
-geom_smooth(se = FALSE, method = "loess", formula = y ~ x, span=.7, size = .5) +
-theme_minimal() + 
-scale_x_continuous(breaks=seq(-40, 47, 10), labels=nolead0s(seq(-40, 47, 10)), limits=c(-40, 47), name="Difference in Ranking Points") +
-scale_y_continuous(breaks=seq(0, 100, 10), labels=paste0(nolead0s(seq(0, 100, 10)), "%"), limits=c(0, 100), name="Percentage Won") +
-scale_colour_manual(values = c("#42c4c7","#FF9999")) + 
-theme(panel.grid.major.y = element_line(colour = "#e3e3e3", linetype = "dotted"),
-      panel.grid.minor.x = element_blank(),
-      panel.grid.major.x = element_line(colour = "#f7f7f7", linetype = "solid"),
-      panel.border       = element_blank(),
-      legend.position    = "hide",
-      legend.text        = element_text(size=10),
-      legend.background  = element_rect(color="#ffffff"),
-      legend.key         = element_rect(color="#ffffff", fill="#ffffff"),
-      legend.key.size    = unit(.1,"cm"),
-      legend.margin      = unit(.2,"cm"),
-      title              = element_text(size=8),
-      axis.title         = element_text(size=8),
-      axis.text          = element_text(size=8),
-      axis.ticks.y       = element_blank(),
-      axis.ticks.x       = element_line(colour = '#f1f1f1'),
-      strip.text.x       = element_text(size=9),
-      legend.text        = element_text(size=8),
-      plot.margin        = unit(c(0,.5,.5,.5), "cm")) + 
-annotate("text", y=52, x=43, label="Lose Toss", size=3.5, colour="#42c4c7") +
-annotate("text", y=70, x=43, label="Win Toss", size=3.5, colour="#FF9999") + 
+scale_x_continuous(breaks=seq(-30, 30, 10), labels=nolead0s(seq(-30, 30, 10)), limits=c(-30, 30), name="Difference in Ranking Points") +
+scale_colour_manual(values = c("#FF9999", "#42c4c7"), labels=c("Lose Toss", "Win Toss")) +
+scale_y_continuous(breaks=seq(0, 100, 10), labels=paste0(nolead0s(seq(0, 100, 10)), "%"), limits=c(0, 100), name="Percentage Won/Drawn") + 
+theme_minimal() +  
+theme_base + 
+theme(legend.position=c(.12, .85), 
+      legend.title =element_blank(),
+      legend.key.height=unit(1.05,"line"),
+      legend.key.size = unit(.9, "line")) +
 facet_grid(. ~ type_of_match)
 
-ggsave("figs/winbyRank.pdf", width=8)
+ggsave("figs/winbyRank.pdf", width=7)
 
 "
 Is there over time learning? If so, toss adv. would increase. 
@@ -353,7 +319,7 @@ Early English Season
 eng_season <- subset(crickett, country=="England")
 
 by_month <- ddply(eng_season, ~ month, summarise, diff = mean(wingame[wintoss==1]) - mean(wingame[wintoss==0]), count=length(unique(url)))
-by_month <- subset(by_month, month!='Mar') # only 5 entries
+by_month <- subset(by_month, month!='Mar') # only 5 matches
 by_month$month <- factor(by_month$month, month.abb, ordered=T)
 by_month$diff <- by_month$diff*100
 by_month <- by_month[order(by_month$month),]
@@ -363,24 +329,7 @@ geom_bar(stat = "identity", position = "identity", fill="#42c4c7") +
 theme_minimal() + 
 xlab("") +
 scale_y_continuous(breaks=seq(-5, 5, 1), labels= paste0(nolead0s(seq(-5, 5, 1)), "%"), limits=c(-5, 5), name="") +
-theme(panel.grid.major.y = element_line(colour = "#e3e3e3", linetype = "dotted"),
-      panel.grid.minor.x = element_blank(),
-      panel.grid.major.x = element_line(colour = "#f7f7f7", linetype = "solid"),
-      panel.border       = element_blank(),
-      legend.position    = "bottom",
-      legend.text        = element_text(size=10),
-      legend.background  = element_rect(color="#ffffff"),
-      legend.key         = element_rect(color="#ffffff", fill="#ffffff"),
-      legend.key.size    = unit(.1,"cm"),
-      legend.margin      = unit(.2,"cm"),
-      title              = element_text(size=8),
-      axis.title         = element_text(size=8),
-      axis.text          = element_text(size=8),
-      axis.ticks.y       = element_blank(),
-      axis.ticks.x       = element_line(colour = '#f1f1f1'),
-      strip.text.x       = element_text(size=9),
-      legend.text        = element_text(size=8),
-      plot.margin        = unit(c(0,.5,.5,.5), "cm")) + 
+theme_base + 
 annotate("text", 
    x = seq(1, 6, 1), 
    y = ifelse(by_month$diff > 0, by_month$diff + .35, by_month$diff - .35), 
@@ -405,24 +354,7 @@ geom_bar(stat = "identity", position = "identity", fill="#42c4c7") +
 theme_minimal() + 
 xlab("") +
 scale_y_continuous(breaks=seq(-3, 7, 1), labels= paste0(nolead0s(seq(-3, 7, 1)), "%"), limits=c(-3, 7), name="") +
-theme(panel.grid.major.y = element_line(colour = "#e3e3e3", linetype = "dotted"),
-      panel.grid.minor.x = element_blank(),
-      panel.grid.major.x = element_line(colour = "#f7f7f7", linetype = "solid"),
-      panel.border       = element_blank(),
-      legend.position    = "bottom",
-      legend.text        = element_text(size=10),
-      legend.background  = element_rect(color="#ffffff"),
-      legend.key         = element_rect(color="#ffffff", fill="#ffffff"),
-      legend.key.size    = unit(.1,"cm"),
-      legend.margin      = unit(.2,"cm"),
-      title              = element_text(size=8),
-      axis.title         = element_text(size=8),
-      axis.text          = element_text(size=8),
-      axis.ticks.y       = element_blank(),
-      axis.ticks.x       = element_line(colour = '#f1f1f1'),
-      strip.text.x       = element_text(size=9),
-      legend.text        = element_text(size=8),
-      plot.margin        = unit(c(0,.5,.5,.5), "cm")) + 
+theme_base + 
 annotate("text", 
    x = seq(1, 7, 1), 
    y = ifelse(by_country$diff > 0, by_country$diff + .35, by_country$diff - .35), 
