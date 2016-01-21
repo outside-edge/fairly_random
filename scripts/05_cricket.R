@@ -106,6 +106,7 @@ team_cols <- c("team1", "team2", "team1_id", "team2_id", "team2_rank", "team1_ra
 rename_cols <- c("team1.name", "team2.name", "team1.id", "team2.id", "team2.rank", "team1.rank", "team1.wintoss", "team2.wintoss", "team1.wingame", "team2.wingame")
 names(cricket)[names(cricket) %in% team_cols] <- rename_cols
 
+# cricket$id <- 1:nrow(cricket)
 # Melt
 crickett <- cricket %>% gather(key, value, starts_with('team')) %>% separate(key, c("var", "col")) %>% arrange(url) %>% spread(col, value)
 
@@ -130,8 +131,8 @@ Ad Hoc Data Integrity Checks
 ddply(crickett, ~type_of_match + day_n_night, summarise, mean=mean(wintoss))
 with(crickett, xtabs( ~ type_of_match + wingame))
 
-crickett$name[!is.na(crickett$signed_diff_ranks) & crickett$signed_diff_ranks < -110]
-crickett$name[!is.na(crickett$signed_diff_ranks) & crickett$signed_diff_ranks > 110]
+crickett$name[!is.na(crickett$signed_diff_ranks) & crickett$signed_diff_ranks < -100]
+crickett$name[!is.na(crickett$signed_diff_ranks) & crickett$signed_diff_ranks > 100]
 
 "
 Analysis
@@ -228,6 +229,26 @@ annotate("text",
    colour = "#444444", 
    size = 2.5)
 ggsave("figs/winbyType.pdf", width=7)
+
+
+ggplot(data = deml, aes(y = groupl, x = true_mean, xmin = true_mean + 1.96*true_se, xmax = true_mean - 1.96*true_se, colour = time)) +
+geom_point(width=1) + 
+geom_errorbarh(height = 0) +
+scale_colour_manual("", values = c("#A84E1C", "#42C4C7")) +
+labs(x="",y="", size=10) + 
+theme_bw() +
+theme(panel.grid.major.y = element_line(colour = "#e3e3e3", linetype = "dotted"),
+     panel.grid.minor.x = element_blank(),
+     panel.grid.major.x = element_line(colour = "#f7f7f7", linetype = "solid"),
+     panel.border       = element_blank(),
+     legend.position  = "bottom",
+     legend.key       = element_blank(),
+     legend.key.width = unit(1,"cm"),
+     axis.title   = element_text(size=10),
+     axis.text    = element_text(size=8),
+     axis.ticks.y = element_blank(),
+     axis.line.x  = element_line(colour = 'red', size = 3, linetype = 'dashed')) +  
+facet_wrap(~ party, ncol=1, drop = TRUE, scales = "free_y")
 
 "
 Win by Day/Night
