@@ -40,8 +40,9 @@ cricket <- subset(cricket, team2!="")
 Take out matches where there was no result
 Leaves us w/ 39672 rows
 "
+temp <- grepl("No result", cricket$outcome)
+cricket <- subset(cricket, !temp)
 
-cricket <- subset(cricket, outcome!="No result")
 
 "
 Take out matches where no decision on who is to bowl/bat first is made
@@ -60,7 +61,7 @@ Drawn Matches
 6673 of them ~ 17%
 "
 
-cricket$draw <- 1*(cricket$outcome=="Match drawn")
+cricket$draw <- 1*grepl("Match drawn", cricket$outcome)
 
 # table(cricket$win_game[cricket$draw==1])
 
@@ -115,7 +116,7 @@ Recode, Fix Variable Type
 "
 # The game is drawn
 
-crickett$bat_bowl     <- ifelse(crickett$wintoss, crickett$bat_or_bowl, ifelse(crickett$bat_or_bowl=="bowl", "bat", "bowl"))
+crickett$bat_bowl     <- ifelse(crickett$wintoss, crickett$bat_or_bowl, ifelse(crickett$bat_or_bowl=="bat", "bat", "bowl"))
 crickett$home_country <- crickett$country == crickett$name
 
 crickett$wintoss <- as.numeric(crickett$wintoss)
@@ -205,7 +206,7 @@ theme_base <- theme(panel.grid.major.y = element_line(colour = "#e3e3e3", linety
       plot.margin        = unit(c(0,.5,.5,.5), "cm"))
 
 # For figs - let us get type of match is nicer factor order
-cricket$type_of_match <- factor(cricket$type_of_match, levels=c("FC", "TEST", "LISTA", "ODI", "T20", "T20I"))
+crickett$type_of_match <- factor(crickett$type_of_match, levels=c("FC", "TEST", "LISTA", "ODI", "T20", "T20I"))
 
 "
 Win By Match Type
