@@ -107,7 +107,6 @@ team_cols <- c("team1", "team2", "team1_id", "team2_id", "team2_rank", "team1_ra
 rename_cols <- c("team1.name", "team2.name", "team1.id", "team2.id", "team2.rank", "team1.rank", "team1.wintoss", "team2.wintoss", "team1.wingame", "team2.wingame")
 names(cricket)[names(cricket) %in% team_cols] <- rename_cols
 
-# cricket$id <- 1:nrow(cricket)
 # Melt
 crickett <- cricket %>% gather(key, value, starts_with('team')) %>% separate(key, c("var", "col")) %>% arrange(url) %>% spread(col, value)
 
@@ -211,45 +210,26 @@ crickett$type_of_match <- factor(crickett$type_of_match, levels=c("FC", "TEST", 
 "
 Win By Match Type
 "
+# crickett <- subset(crickett, !is.na(type_of_match))
 
 win_match_type <- ddply(crickett, ~type_of_match, summarise, diff = mean(wingame[wintoss==1]) - mean(wingame[wintoss==0]), count=length(unique(url)))
 win_match_type$diff <- win_match_type$diff*100
 win_match_type$type_of_match <- factor(win_match_type$type_of_match, levels=c("FC", "TEST", "LISTA", "ODI", "T20", "T20I"))
 win_match_type <- win_match_type[order(win_match_type$type_of_match),]
 
-ggplot(win_match_type, aes(x=type_of_match, y=diff)) + 
-geom_bar(stat = "identity", fill="#42c4c7") + 
+ggplot(win_match_type, aes(x=diff, y=type_of_match)) + 
+geom_point(fill="#42c4c7") + 
 theme_minimal() + 
-xlab("") +
-scale_y_continuous(breaks=seq(0, 7, 1), labels= paste0(nolead0s(seq(0, 7, 1)), "%"), limits=c(0, 7), name="") +
+labs(y="",x="Difference", size=10) + 
+scale_x_continuous(breaks=seq(0, 7, 1), labels= paste0(nolead0s(seq(0, 7, 1)), "%"), limits=c(0, 7), name="") +
 theme_base + 
 annotate("text", 
-   x = seq(1, 6, 1), 
+   x = seq(1, nrow(win_match_type), 1), 
    y = win_match_type$diff + .35, 
    label = paste0(round(win_match_type$diff,2), "% \n (n =", format(win_match_type$count, big.mark=",", scientific=FALSE), ")"), 
    colour = "#444444", 
    size = 2.5)
 ggsave("figs/winbyType.pdf", width=7)
-
-
-ggplot(data = deml, aes(y = groupl, x = true_mean, xmin = true_mean + 1.96*true_se, xmax = true_mean - 1.96*true_se, colour = time)) +
-geom_point(width=1) + 
-geom_errorbarh(height = 0) +
-scale_colour_manual("", values = c("#A84E1C", "#42C4C7")) +
-labs(x="",y="", size=10) + 
-theme_bw() +
-theme(panel.grid.major.y = element_line(colour = "#e3e3e3", linetype = "dotted"),
-     panel.grid.minor.x = element_blank(),
-     panel.grid.major.x = element_line(colour = "#f7f7f7", linetype = "solid"),
-     panel.border       = element_blank(),
-     legend.position  = "bottom",
-     legend.key       = element_blank(),
-     legend.key.width = unit(1,"cm"),
-     axis.title   = element_text(size=10),
-     axis.text    = element_text(size=8),
-     axis.ticks.y = element_blank(),
-     axis.line.x  = element_line(colour = 'red', size = 3, linetype = 'dashed')) +  
-facet_wrap(~ party, ncol=1, drop = TRUE, scales = "free_y")
 
 "
 Win by Day/Night
