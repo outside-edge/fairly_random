@@ -19,7 +19,7 @@ import simplejson
 import unicodedata
 from BeautifulSoup import BeautifulSoup, SoupStrainer
 
-for match_type in ['list%20a', 'first%20class']: # 'odi', 'test', 't20i', 't20', 
+for match_type in ['list%20a', 'first%20class', 'odi', 'test', 't20i', 't20']: 
     results = []
     r = requests.get('http://search.espncricinfo.com/ci/content/match/search.html?all=1;page=0;search=' + match_type)
     soup = BeautifulSoup(r.text)
