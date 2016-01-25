@@ -60,9 +60,10 @@ match$year  <- ifelse(as.numeric(temp[,3]) < 1700, as.numeric(temp[,3]) + 1900 ,
 # International can be split by men, women, youth
 match$women <- 1*grepl("Women", match$type_of_match)
 match$youth <- 1*grepl("Youth", match$type_of_match)
+match$unofficial <- 1*grepl("Unofficial", match$type_of_match)
 
 # Match Type Rationalization
-match$type_of_match[grepl("Test", match$type_of_match)] <- "Test"
+match$type_of_match[grepl("Test", match$type_of_match)] <- "TEST"
 match$type_of_match[grepl("ODI", match$type_of_match)]  <- "ODI"
 match$type_of_match[grepl("T20I", match$type_of_match)] <- "T20I"
 match$type_of_match[grepl("First-class", match$type_of_match)] <- "FC"
@@ -70,7 +71,7 @@ match$type_of_match[grepl("List A", match$type_of_match)] <- "LISTA"
 match$type_of_match[grepl("Twenty20", match$type_of_match)] <- "T20"
 
 # Distinguish Men's ODI, Test, T20I from rest as rankings only for men's 
-match$men_type_of_match <- ifelse(match$women | match$youth, paste0("WY", match$type_of_match), match$type_of_match)
+match$men_type_of_match <- ifelse(match$women | match$youth | match$unofficial, paste0("WYU", match$type_of_match), match$type_of_match)
 
 # Go for exact match
 # Unique_ID1, Unique_ID2
@@ -90,7 +91,7 @@ match$team1_rank  <- ranks$rating[match(match$team1_spid, ranks$unique)]
 match$team2_rank  <- ranks$rating[match(match$team2_spid, ranks$unique)]
 
 # Adhoc data integrity check 
-match$team1_rank[match$type_of_match=='ODI' & match$month=='Apr']
+match$team1_rank[match$men_type_of_match=='ODI' & match$month==4]
 table(match$team1[!is.na(match$team1_rank)])
 table(match$team2[!is.na(match$team2_rank)])
 range(match$team1_rank[match$team1=="Bangladesh"], na.rm=T)
