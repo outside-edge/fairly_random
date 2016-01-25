@@ -10,17 +10,17 @@ from espncricinfo.match import Match
 
 headers = ["team1", "team1_id", "team2", "team2_id", "win_toss", "bat_or_bowl", "outcome", "win_game", "date", "day_n_night", "ground", "rain", "duckworth_lewis", "match_id", "type_of_match", "match_type_id", "home_team_id", "umpire_1_id", "umpire_1_name", "umpire_1_country", "umpire_2_id", "umpire_2_name", "umpire_2_country", "tv_umpire_id", "tv_umpire_name", "tv_umpire_country", "referree_id", "referee_name", "referee_country", "url"]
 
-results = simplejson.loads(open('matches-first-class.json').read())
-results = list(set(results))
+matches = simplejson.loads(open('all_matches.json').read())
+matches = list(set(matches)) # dedupe
 
 ##################################START PROCESSING DATA#########################################
-with open("first_class_output.csv", "wb") as csvfile:
+with open("final_output.csv", "wb") as csvfile:
     writer = csv.writer(csvfile)
     writer.writerow(headers)
-    for result in results:
+    for match in matches:
         time.sleep(1)
         try:
-            m = Match(int(result))
+            m = Match(int(match))
             if m.match_json()['match_status'] == 'forthcoming':
                 continue
             if m.result() == '':
@@ -76,7 +76,7 @@ with open("first_class_output.csv", "wb") as csvfile:
                 mr_id = None
                 mr_name = None
                 mr_country = None
-            writer.writerow([m.team_1()['team_name'], m.team_1_id(), m.team_2()['team_name'], m.team_2_id(), m.toss_winner(), m.toss_decision(), m.result(), m.match_winner(), m.date(), m.lighting(), m.ground_name(), None, duckworth_lewis, result, m.match_class(), match_type_id, m.match_json()['home_team_id'], ump_1['object_id'], ump_1['known_as'], ump_1['team_abbreviation'], ump_2['object_id'], ump_2['known_as'], ump_2['team_abbreviation'], tvu_id, tvu_name, tvu_country, mr_id, mr_name, mr_country, m.match_url])
+            writer.writerow([m.team_1()['team_name'], m.team_1_id(), m.team_2()['team_name'], m.team_2_id(), m.toss_winner(), m.toss_decision(), m.result(), m.match_json()['winner_team_id'], m.date(), m.lighting(), m.ground_name(), None, duckworth_lewis, match, m.match_class(), match_type_id, m.match_json()['home_team_id'], ump_1['object_id'], ump_1['known_as'], ump_1['team_abbreviation'], ump_2['object_id'], ump_2['known_as'], ump_2['team_abbreviation'], tvu_id, tvu_name, tvu_country, mr_id, mr_name, mr_country, m.match_url])
         except simplejson.scanner.JSONDecodeError:
             continue
 
