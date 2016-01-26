@@ -266,16 +266,16 @@ Win by DL
 ltd_dl <- ddply(ltdcricket, ~type_of_match + duckworth_lewis, summarise, diff = mean(wingame[wintoss==1]) - mean(wingame[wintoss==0]), count=length(unique(url)))
 ltd_dl$diff <- ltd_dl$diff*100
 
-ggplot(ltd_dl, aes(x=type_of_match, y=diff, fill=factor(duckworth_lewis))) + 
-geom_bar(stat="identity", position="dodge") +
+ggplot(ltd_dl, aes(y=type_of_match, x=diff, color=factor(duckworth_lewis))) + 
+geom_point() + 
 theme_minimal() + 
-xlab("") +
+ylab("") +
 scale_fill_discrete(name="", labels=c(" No D/L   ", " Duckworth Lewis")) + 
-scale_y_continuous(breaks=seq(-1, 7, 1), labels=nolead0s(seq(-1, 7, 1)), limits=c(-1, 7), name="") +
+scale_x_continuous(breaks=seq(-1, 7, 1), labels= paste0(nolead0s(seq(-1, 7, 1)), "%"), limits=c(-1, 7), name="") +
 theme_base + 
 annotate("text", 
-   x = seq(.75,4.25,.5), 
-   y = ifelse(ltd_dl$diff > 0, ltd_dl$diff+ .25, ltd_dl$diff-.25), 
+   y = seq(.75,4.25,.5), 
+   x = ifelse(ltd_dl$diff > 0, ltd_dl$diff+ .25, ltd_dl$diff-.25), 
    label = paste0(round(ltd_dl$diff,2), "% \n (n =", format(ltd_dl$count, big.mark=",", scientific=FALSE), ")"), 
    colour = "#444444", 
    size = 2.5) + 
@@ -324,20 +324,20 @@ Early English Season
 eng_season <- subset(crickett, country=="England")
 
 by_month <- ddply(eng_season, ~ month, summarise, diff = mean(wingame[wintoss==1]) - mean(wingame[wintoss==0]), count=length(unique(url)))
-by_month <- subset(by_month, month!='Mar') # only 5 matches
-by_month$month <- factor(by_month$month, month.abb, ordered=T)
+by_month <- subset(by_month, month!=3) # only 5 matches
+by_month$month <- month.abb[by_month$month]
 by_month$diff <- by_month$diff*100
 by_month <- by_month[order(by_month$month),]
 
-ggplot(by_month, aes(x=month, y=diff)) + 
-geom_bar(stat = "identity", position = "identity", fill="#42c4c7") + 
+ggplot(by_month, aes(y=month, x=diff)) + 
+geom_point() + 
 theme_minimal() + 
-xlab("") +
-scale_y_continuous(breaks=seq(-5, 5, 1), labels= paste0(nolead0s(seq(-5, 5, 1)), "%"), limits=c(-5, 5), name="") +
+ylab("") +
+scale_x_continuous(breaks=seq(-5, 5, 1), labels= paste0(nolead0s(seq(-5, 5, 1)), "%"), limits=c(-5, 5), name="") +
 theme_base + 
 annotate("text", 
-   x = seq(1, 6, 1), 
-   y = ifelse(by_month$diff > 0, by_month$diff + .35, by_month$diff - .35), 
+   y = seq(1, 6, 1), 
+   x = ifelse(by_month$diff > 0, by_month$diff + .35, by_month$diff - .35), 
    label = paste0(round(by_month$diff,2), "% \n (n =", format(by_month$count, big.mark=",", scientific=FALSE), ")"), 
    colour = "#444444", 
    size = 2.5)
@@ -354,15 +354,15 @@ small_set <- subset(crickett, name %in% c("India", "Australia", "West Indies", "
 by_country <- ddply(small_set, ~ name, summarise, diff = mean(wingame[wintoss==1]) - mean(wingame[wintoss==0]), count=length(unique(url)))
 by_country$diff <- by_country$diff*100
 
-ggplot(by_country, aes(x=name, y=diff)) + 
-geom_bar(stat = "identity", position = "identity", fill="#42c4c7") + 
+ggplot(by_country, aes(y=name, x=diff)) + 
+geom_point() + 
 theme_minimal() + 
-xlab("") +
-scale_y_continuous(breaks=seq(-3, 7, 1), labels= paste0(nolead0s(seq(-3, 7, 1)), "%"), limits=c(-3, 7), name="") +
+ylab("") +
+scale_x_continuous(breaks=seq(-3, 7, 1), labels= paste0(nolead0s(seq(-3, 7, 1)), "%"), limits=c(-3, 7), name="") +
 theme_base + 
 annotate("text", 
-   x = seq(1, 7, 1), 
-   y = ifelse(by_country$diff > 0, by_country$diff + .35, by_country$diff - .35), 
+   y = seq(1, 7, 1), 
+   x = ifelse(by_country$diff > 0, by_country$diff + .35, by_country$diff - .35), 
    label = paste0(round(by_country$diff,2), "% \n (n =", format(by_country$count, big.mark=",", scientific=FALSE), ")"), 
    colour = "#444444", 
    size = 2.5)
