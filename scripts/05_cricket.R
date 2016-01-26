@@ -210,21 +210,48 @@ theme_base <- theme(panel.grid.major.y = element_line(colour = "#e3e3e3", linety
 # For figs - let us get type of match is nicer factor order
 crickett$type_of_match2 <- factor(crickett$type_of_match, levels=c("FC", "TEST", "LISTA", "ODI", "T20", "T20I"))
 
+# Bootstrap s.e.
+
+# set.seed
+set.seed(97689)
+boot.se <- function(dat, n_boots = 1000) {
+
+   n_uniques <- length(unique(dat$url))
+   samps     <- replicate(n_boots, sample(1:n_uniques, n_uniques, replace=T))
+   all_diffs <- NA
+
+   for (i in 1:ncol(samps)){
+      small_dat <- dat[match(dat$url[samps[,i]], dat$url, nomatch = 0),]
+      diff      <- with(small_dat, mean(wingame[wintoss==1]) - mean(wingame[wintoss==0]))
+      all_diffs[i] <- diff
+   }
+   sd(all_diffs)
+   #res <- all_diffs[order(all_diffs)]
+   #c(res[c(.025, .975)*n_boots])
+}
+
 "
 Win By Match Type
 "
-# crickett <- subset(crickett, !is.na(type_of_match))
 
-win_match_type <- ddply(crickett, ~type_of_match, summarise, diff = mean(wingame[wintoss==1]) - mean(wingame[wintoss==0]), count=length(unique(url)))
+crickett$basic_type_of_match <- car::recode(crickett$type_of_match, "c('TEST', 'FC')='FC/TEST';c('T20','T20I')='T20/T20I';c('LISTA', 'ODI')='LISTA/ODI'")
+
+win_match_type <- ddply(crickett, ~basic_type_of_match, summarise, diff = mean(wingame[wintoss==1]) - mean(wingame[wintoss==0]), count=length(unique(url)))
+se <- ddply(crickett,  ~basic_type_of_match, function(x) c(se = boot.se(x)))
+win_match_type$se   <- se$se[match(win_match_type$basic_type_of_match, se$basic_type_of_match)]
 win_match_type$diff <- win_match_type$diff*100
-win_match_type$type_of_match <- factor(win_match_type$type_of_match, levels=c("T20I", "T20", "ODI", "LISTA",  "TEST", "FC"))
-win_match_type <- win_match_type[order(win_match_type$type_of_match),]
+win_match_type$basic_type_of_match <- factor(win_match_type$basic_type_of_match, levels=c("T20/T20I", "LISTA/ODI", "FC/TEST"))
+win_match_type <- win_match_type[order(win_match_type$basic_type_of_match),]
+win_match_type$lci <-  win_match_type$diff - 2*win_match_type$se*100
+win_match_type$hci <-  win_match_type$diff + 2*win_match_type$se*100
 
-ggplot(win_match_type, aes(x=diff, y=type_of_match)) + 
+ggplot(win_match_type, aes(x=diff, y=basic_type_of_match, xmin = lci, xmax = hci)) + 
 geom_point(fill="#42c4c7") + 
+geom_errorbarh(height = 0) +
+geom_vline(xintercept = 0, color="grey", linetype="dashed") + 
 theme_minimal() + 
 labs(y="",x="Difference", size=10) + 
-scale_x_continuous(breaks=seq(0, 7, 1), labels= paste0(nolead0s(seq(0, 7, 1)), "%"), limits=c(0, 7), name="") +
+scale_x_continuous(breaks=seq(-2, 7, 1), labels= paste0(nolead0s(seq(-2, 7, 1)), "%"), limits=c(-2, 7), name="") +
 theme_base + 
 annotate("text", 
    y = seq(1, nrow(win_match_type), 1), 
