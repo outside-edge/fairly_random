@@ -270,7 +270,7 @@ ltdcricket <- subset(crickett, type_of_match!="FC" & type_of_match!="TEST")
 
 ltd_day_n_night <- ddply(ltdcricket, ~basic_type_of_match + day_n_night, summarise, diff = mean(wingame[wintoss==1]) - mean(wingame[wintoss==0]), count=length(unique(url)))
 se <- ddply(ltdcricket,  ~basic_type_of_match + day_n_night, function(x) c(se = boot.se(x)))
-ltd_day_n_night$se    <- se$se[match(ltd_day_n_night$basic_type_of_match, se$basic_type_of_match)]
+ltd_day_n_night$se    <-  se$se[match(ltd_day_n_night$basic_type_of_match, se$basic_type_of_match)]
 ltd_day_n_night$diff  <-  ltd_day_n_night$diff*100
 ltd_day_n_night$lci   <-  ltd_day_n_night$diff - 2*ltd_day_n_night$se*100
 ltd_day_n_night$hci   <-  ltd_day_n_night$diff + 2*ltd_day_n_night$se*100
@@ -282,7 +282,7 @@ geom_errorbarh(height = 0) +
 geom_vline(xintercept = 0, color="grey", linetype="dashed") + 
 theme_minimal() + 
 ylab("") +
-scale_y_continuous(breaks=c(1,2), labels= c("LISTA/ODI", "T20/T20I"), limits=c(.5, 2.5), name="") +
+scale_y_continuous(breaks=c(1.05,2.05), labels= c("LISTA/ODI", "T20/T20I"), limits=c(.5, 2.5), name="") +
 scale_color_discrete(name="", labels=c(" Day   ", " Day and Night")) + 
 scale_x_continuous(breaks=seq(-4, 10, 2), labels= paste0(nolead0s(seq(-4, 10, 2)), "%"), limits=c(-3, 10), name="") +
 theme_base + 
@@ -298,9 +298,9 @@ ggsave("figs/winbyDayNight.pdf", width=5.5)
 Win by DL
 "
 
-ltd_dl       <- ddply(ltdcricket, ~basic_type_of_match + duckworth_lewis, summarise, diff = mean(wingame[wintoss==1]) - mean(wingame[wintoss==0]), count=length(unique(url)))
-se           <- ddply(ltdcricket,  ~basic_type_of_match + duckworth_lewis, function(x) c(se = boot.se(x)))
-ltd_dl$se    <- se$se[match(ltd_dl$basic_type_of_match, se$basic_type_of_match)]
+ltd_dl       <-  ddply(ltdcricket, ~basic_type_of_match + duckworth_lewis, summarise, diff = mean(wingame[wintoss==1]) - mean(wingame[wintoss==0]), count=length(unique(url)))
+se           <-  ddply(ltdcricket,  ~basic_type_of_match + duckworth_lewis, function(x) c(se = boot.se(x)))
+ltd_dl$se    <-  se$se[match(ltd_dl$basic_type_of_match, se$basic_type_of_match)]
 ltd_dl$diff  <-  ltd_dl$diff*100
 ltd_dl$lci   <-  ltd_dl$diff - 2*ltd_dl$se*100
 ltd_dl$hci   <-  ltd_dl$diff + 2*ltd_dl$se*100
@@ -369,11 +369,18 @@ by_month$month <- month.abb[by_month$month]
 by_month$diff <- by_month$diff*100
 by_month <- by_month[order(by_month$month),]
 
-ggplot(by_month, aes(y=month, x=diff)) + 
+se             <-  ddply(eng_season,  ~month, function(x) c(se = boot.se(x)))
+by_month$se    <-  se$se[match(by_month$month, month.abb[se$month])]
+by_month$lci   <-  by_month$diff - 2*by_month$se*100
+by_month$hci   <-  by_month$diff + 2*by_month$se*100
+
+ggplot(by_month, aes(y=month, x=diff, xmin = lci, xmax = hci)) + 
 geom_point() + 
 theme_minimal() + 
+geom_errorbarh(height = 0) +
+geom_vline(xintercept = 0, color="grey", linetype="dashed") + 
 ylab("") +
-scale_x_continuous(breaks=seq(-5, 5, 1), labels= paste0(nolead0s(seq(-5, 5, 1)), "%"), limits=c(-5, 5), name="") +
+scale_x_continuous(breaks=seq(-12, 12, 2), labels= paste0(nolead0s(seq(-12, 12, 2)), "%"), limits=c(-11, 11), name="") +
 theme_base + 
 annotate("text", 
    y = seq(1, 6, 1), 
@@ -394,8 +401,10 @@ small_set <- subset(crickett, name %in% c("India", "Australia", "West Indies", "
 by_country <- ddply(small_set, ~ name, summarise, diff = mean(wingame[wintoss==1]) - mean(wingame[wintoss==0]), count=length(unique(url)))
 by_country$diff <- by_country$diff*100
 
-ggplot(by_country, aes(y=name, x=diff)) + 
+ggplot(by_country, aes(y=name, x=diff, xmin = lci, xmax = hci)) + 
 geom_point() + 
+geom_errorbarh(height = 0) +
+geom_vline(xintercept = 0, color="grey", linetype="dashed") + 
 theme_minimal() + 
 ylab("") +
 scale_x_continuous(breaks=seq(-3, 7, 1), labels= paste0(nolead0s(seq(-3, 7, 1)), "%"), limits=c(-3, 7), name="") +
