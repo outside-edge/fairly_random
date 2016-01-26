@@ -268,45 +268,58 @@ No test or first-class
 
 ltdcricket <- subset(crickett, type_of_match!="FC" & type_of_match!="TEST")
 
-ltd_day_n_night <- ddply(ltdcricket, ~type_of_match + day_n_night, summarise, diff = mean(wingame[wintoss==1]) - mean(wingame[wintoss==0]), count=length(unique(url)))
-ltd_day_n_night$diff <- ltd_day_n_night$diff*100
+ltd_day_n_night <- ddply(ltdcricket, ~basic_type_of_match + day_n_night, summarise, diff = mean(wingame[wintoss==1]) - mean(wingame[wintoss==0]), count=length(unique(url)))
+se <- ddply(ltdcricket,  ~basic_type_of_match + day_n_night, function(x) c(se = boot.se(x)))
+ltd_day_n_night$se    <- se$se[match(ltd_day_n_night$basic_type_of_match, se$basic_type_of_match)]
+ltd_day_n_night$diff  <-  ltd_day_n_night$diff*100
+ltd_day_n_night$lci   <-  ltd_day_n_night$diff - 2*ltd_day_n_night$se*100
+ltd_day_n_night$hci   <-  ltd_day_n_night$diff + 2*ltd_day_n_night$se*100
+ltd_day_n_night$id <- c(1,1.1,2,2.1)
 
-ggplot(ltd_day_n_night, aes(y=type_of_match, x=diff, color=day_n_night)) + 
+ggplot(ltd_day_n_night, aes(y=id, x=diff, xmin = lci, xmax = hci, color=day_n_night)) + 
 geom_point() + 
+geom_errorbarh(height = 0) +
+geom_vline(xintercept = 0, color="grey", linetype="dashed") + 
 theme_minimal() + 
 ylab("") +
-scale_fill_discrete(name="", labels=c(" Day   ", " Day and Night")) + 
-scale_x_continuous(breaks=seq(-10, 11, 2), labels= paste0(nolead0s(seq(-10, 11, 2)), "%"), limits=c(-10, 11), name="") +
+scale_y_continuous(breaks=c(1,2), labels= c("LISTA/ODI", "T20/T20I"), limits=c(.5, 2.5), name="") +
+scale_color_discrete(name="", labels=c(" Day   ", " Day and Night")) + 
+scale_x_continuous(breaks=seq(-4, 10, 2), labels= paste0(nolead0s(seq(-4, 10, 2)), "%"), limits=c(-3, 10), name="") +
 theme_base + 
 annotate("text", 
-   y = seq(.75, 4.25, .5), 
-   x = ltd_day_n_night$diff + .35, 
+   y = c(1.1,1.2,1.9,2.2), 
+   x = ltd_day_n_night$diff + .175, 
    label = paste0(round(ltd_day_n_night$diff,2), "% \n (n =", format(ltd_day_n_night$count, big.mark=",", scientific=FALSE), ")"), 
    colour = "#444444", 
    size = 2.5)
-ggsave("figs/winbyDayNight.pdf", width=6)
+ggsave("figs/winbyDayNight.pdf", width=5.5)
 
 "
 Win by DL
 "
 
-ltd_dl <- ddply(ltdcricket, ~type_of_match + duckworth_lewis, summarise, diff = mean(wingame[wintoss==1]) - mean(wingame[wintoss==0]), count=length(unique(url)))
-ltd_dl$diff <- ltd_dl$diff*100
+ltd_dl       <- ddply(ltdcricket, ~basic_type_of_match + duckworth_lewis, summarise, diff = mean(wingame[wintoss==1]) - mean(wingame[wintoss==0]), count=length(unique(url)))
+se           <- ddply(ltdcricket,  ~basic_type_of_match + duckworth_lewis, function(x) c(se = boot.se(x)))
+ltd_dl$se    <- se$se[match(ltd_dl$basic_type_of_match, se$basic_type_of_match)]
+ltd_dl$diff  <-  ltd_dl$diff*100
+ltd_dl$lci   <-  ltd_dl$diff - 2*ltd_dl$se*100
+ltd_dl$hci   <-  ltd_dl$diff + 2*ltd_dl$se*100
 
-ggplot(ltd_dl, aes(y=type_of_match, x=diff, color=factor(duckworth_lewis))) + 
+ggplot(ltd_dl, aes(y=basic_type_of_match, x=diff, xmin = lci, xmax = hci, color=factor(duckworth_lewis))) + 
 geom_point() + 
+geom_errorbarh(height = 0) +
+geom_vline(xintercept = 0, color="grey", linetype="dashed") + 
 theme_minimal() + 
 ylab("") +
-scale_fill_discrete(name="", labels=c(" No D/L   ", " Duckworth Lewis")) + 
-scale_x_continuous(breaks=seq(-1, 7, 1), labels= paste0(nolead0s(seq(-1, 7, 1)), "%"), limits=c(-1, 7), name="") +
+scale_color_discrete(name="", labels=c(" No D/L   ", " Duckworth Lewis")) + 
+scale_x_continuous(breaks=seq(-2, 7, 1), labels= paste0(nolead0s(seq(-2, 7, 1)), "%"), limits=c(-2, 7), name="") +
 theme_base + 
 annotate("text", 
-   y = seq(.75,4.25,.5), 
-   x = ifelse(ltd_dl$diff > 0, ltd_dl$diff+ .25, ltd_dl$diff-.25), 
+   y = c(1.1,1.1,2.1,2.1), 
+   x = ltd_dl$diff,
    label = paste0(round(ltd_dl$diff,2), "% \n (n =", format(ltd_dl$count, big.mark=",", scientific=FALSE), ")"), 
    colour = "#444444", 
-   size = 2.5) + 
-annotate("text", y=.18, x=4.25, label="zero", size=3.5)
+   size = 2.5) 
 ggsave("figs/winbyDL.pdf", width=5)
 
 "
