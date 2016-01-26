@@ -66,10 +66,10 @@ cricket$draw <- 1*grepl("Match drawn", cricket$outcome)
 # table(cricket$win_game[cricket$draw==1])
 
 # Win toss, win game
-cricket$team1_win_toss <- 1*(cricket$team1==cricket$win_toss)
-cricket$team2_win_toss <- 1*(cricket$team2==cricket$win_toss)
-cricket$team1_win_game <- 1*(cricket$team1==cricket$win_game)
-cricket$team2_win_game <- 1*(cricket$team2==cricket$win_game)
+cricket$team1_win_toss <- 1*(cricket$team1_id==cricket$win_toss)
+cricket$team2_win_toss <- 1*(cricket$team2_id==cricket$win_toss)
+cricket$team1_win_game <- 1*(cricket$team1_id==cricket$win_game)
+cricket$team2_win_game <- 1*(cricket$team2_id==cricket$win_game)
 cricket$team1_win_game[cricket$draw==1] <- .5
 cricket$team2_win_game[cricket$draw==1] <- .5
 
@@ -90,8 +90,11 @@ cricket$home_toss_win_t <- stri_detect_fixed(cricket$ground, cricket$win_toss, c
 cricket$home_country_data  <- cricket$country == cricket$team1 | cricket$country==cricket$team2
 
 # Home country wins toss
-cricket$home_wins_toss  <- ifelse(cricket$country==cricket$team1, cricket$team1_win_toss, cricket$team2_win_toss)
+cricket$home_wins_toss  <- ifelse(cricket$home_team_id==cricket$team1_id, cricket$team1_win_toss, cricket$team2_win_toss)
 # with(cricket[cricket$home_country_data==1,], mean(home_wins_toss))
+
+# Fix Day/Night
+cricket$day_n_night <- ifelse(cricket$day_n_night=="night match", "day/night match", cricket$day_n_night)
 
 "
 Melt the data
@@ -205,7 +208,7 @@ theme_base <- theme(panel.grid.major.y = element_line(colour = "#e3e3e3", linety
       plot.margin        = unit(c(0,.5,.5,.5), "cm"))
 
 # For figs - let us get type of match is nicer factor order
-crickett$type_of_match <- factor(crickett$type_of_match, levels=c("FC", "TEST", "LISTA", "ODI", "T20", "T20I"))
+crickett$type_of_match2 <- factor(crickett$type_of_match, levels=c("FC", "TEST", "LISTA", "ODI", "T20", "T20I"))
 
 "
 Win By Match Type
@@ -214,7 +217,7 @@ Win By Match Type
 
 win_match_type <- ddply(crickett, ~type_of_match, summarise, diff = mean(wingame[wintoss==1]) - mean(wingame[wintoss==0]), count=length(unique(url)))
 win_match_type$diff <- win_match_type$diff*100
-win_match_type$type_of_match <- factor(win_match_type$type_of_match, levels=c("FC", "TEST", "LISTA", "ODI", "T20", "T20I"))
+win_match_type$type_of_match <- factor(win_match_type$type_of_match, levels=c("T20I", "T20", "ODI", "LISTA",  "TEST", "FC"))
 win_match_type <- win_match_type[order(win_match_type$type_of_match),]
 
 ggplot(win_match_type, aes(x=diff, y=type_of_match)) + 
@@ -224,8 +227,8 @@ labs(y="",x="Difference", size=10) +
 scale_x_continuous(breaks=seq(0, 7, 1), labels= paste0(nolead0s(seq(0, 7, 1)), "%"), limits=c(0, 7), name="") +
 theme_base + 
 annotate("text", 
-   x = seq(1, nrow(win_match_type), 1), 
-   y = win_match_type$diff + .35, 
+   y = seq(1, nrow(win_match_type), 1), 
+   x = win_match_type$diff + .45, 
    label = paste0(round(win_match_type$diff,2), "% \n (n =", format(win_match_type$count, big.mark=",", scientific=FALSE), ")"), 
    colour = "#444444", 
    size = 2.5)
@@ -241,16 +244,16 @@ ltdcricket <- subset(crickett, type_of_match!="FC" & type_of_match!="TEST")
 ltd_day_n_night <- ddply(ltdcricket, ~type_of_match + day_n_night, summarise, diff = mean(wingame[wintoss==1]) - mean(wingame[wintoss==0]), count=length(unique(url)))
 ltd_day_n_night$diff <- ltd_day_n_night$diff*100
 
-ggplot(ltd_day_n_night, aes(x=type_of_match, y=diff, fill=factor(day_n_night))) + 
-geom_bar(stat="identity", position="dodge") +
+ggplot(ltd_day_n_night, aes(y=type_of_match, x=diff, color=day_n_night)) + 
+geom_point() + 
 theme_minimal() + 
-xlab("") +
+ylab("") +
 scale_fill_discrete(name="", labels=c(" Day   ", " Day and Night")) + 
-scale_y_continuous(breaks=seq(-10, 10, 1), labels= paste0(nolead0s(seq(-10, 10, 1)), "%"), limits=c(-10, 10.5), name="") +
+scale_x_continuous(breaks=seq(-10, 11, 2), labels= paste0(nolead0s(seq(-10, 11, 2)), "%"), limits=c(-10, 11), name="") +
 theme_base + 
 annotate("text", 
-   x = seq(.75, 4.25, .5), 
-   y = ifelse(ltd_day_n_night$diff > 0, ltd_day_n_night$diff + .7, ltd_day_n_night$diff - .65), 
+   y = seq(.75, 4.25, .5), 
+   x = ltd_day_n_night$diff + .35, 
    label = paste0(round(ltd_day_n_night$diff,2), "% \n (n =", format(ltd_day_n_night$count, big.mark=",", scientific=FALSE), ")"), 
    colour = "#444444", 
    size = 2.5)
