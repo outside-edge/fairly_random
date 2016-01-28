@@ -1,6 +1,10 @@
 "
-@title:   Fairly Random: Impact of Winning the Toss on the Probability of Winning
-@authors: Gaurav Sood and Derek Willis
+@description:
+1. Analyses
+2. Graphs 
+
+@authors: 
+Gaurav Sood and Derek Willis
 
 "
 
@@ -16,85 +20,34 @@ library(stringi)
 library(xtable)
 library(tidyr)
 
-# Read in data/ now sourcing it - see 04_merge_ranking_data
-# cricket <- read.csv("data/final_output.csv")
+"
+Notes About the Data:
+
+Not scraped 'matches' where the match was abandoned without a toss
+In a previous dataset, about 3k matches were abandoned so. Don't like the 7% number. Touch too high, imho. But checked data - turns out to be ok.
+sum(match$win_toss=='')
+
+Any matches with missing team name info.?
+sum(match$team2=='')
+"
 
 "
-Data integrity
-match$outcome[match$win_game==''] # looks good
-table(match$outcome[match$win_toss=='' & match$outcome!=''])
+Take out matches where there was no result. See for e.g.,
+http://www.espncricinfo.com/matches/engine/match/329869.html
 
-Take out matches with no toss (~ no match)
-About 3k matches. Don't like the 7% number. Touch too high, imho. But checked data - turns out to be ok.
+Takes out 780 matches
+"
+temp <- grepl("No result", match$outcome)
+cricket <- subset(match, !temp)
 
 "
-cricket <- subset(match, win_toss!="")
-
-"
-Team 2 missing in one case
-"
-cricket <- subset(cricket, team2!="")
-
-
-"
-Take out matches where there was no result
-Leaves us w/ 39672 rows
-"
-temp <- grepl("No result", cricket$outcome)
-cricket <- subset(cricket, !temp)
-
-
-"
-Take out matches where no decision on who is to bowl/bat first is made
+Take out matches where decision on who bowled/batted first is unknown. See this, for e.g.:
+http://www.espncricinfo.com/matches/engine/match/537589.html 
+Takes out 2384 matches
 "
 
 cricket <- subset(cricket, bat_or_bowl!="")
 
-
-"
-More recoding
------------------
-"
-
-"
-Drawn Matches
-6673 of them ~ 17%
-"
-
-cricket$draw <- 1*grepl("Match drawn", cricket$outcome)
-
-# table(cricket$win_game[cricket$draw==1])
-
-# Win toss, win game
-cricket$team1_win_toss <- 1*(cricket$team1_id==cricket$win_toss)
-cricket$team2_win_toss <- 1*(cricket$team2_id==cricket$win_toss)
-cricket$team1_win_game <- 1*(cricket$team1_id==cricket$win_game)
-cricket$team2_win_game <- 1*(cricket$team2_id==cricket$win_game)
-cricket$team1_win_game[cricket$draw==1] <- .5
-cricket$team2_win_game[cricket$draw==1] <- .5
-
-"
-Country that won toss == Home Country
-International Matches Only --- as they are the easiest
-
-# Less precise
-# Denominator ...?
-cricket$home_toss_win_t <- stri_detect_fixed(cricket$ground, cricket$win_toss, case_insensitive=TRUE) | 
-                           stri_detect_fixed(cricket$team1, cricket$country, case_insensitive=TRUE) | 
-                           stri_detect_fixed(cricket$team2, cricket$country, case_insensitive=TRUE) |
-                           stri_detect_fixed(cricket$country, cricket$team1, case_insensitive=TRUE) | 
-                           stri_detect_fixed(cricket$country, cricket$team2, case_insensitive=TRUE)
-
-"
-
-cricket$home_country_data  <- cricket$country == cricket$team1 | cricket$country==cricket$team2
-
-# Home country wins toss
-cricket$home_wins_toss  <- ifelse(cricket$home_team_id==cricket$team1_id, cricket$team1_win_toss, cricket$team2_win_toss)
-# with(cricket[cricket$home_country_data==1,], mean(home_wins_toss))
-
-# Fix Day/Night
-cricket$day_n_night <- ifelse(cricket$day_n_night=="night match", "day/night match", cricket$day_n_night)
 
 "
 Melt the data
@@ -102,13 +55,13 @@ Two rows per match
 "
 
 # Match level vars: 
-match_cols <- c("url", "date", "day_n_night", "ground", "rain", "duckworth_lewis", "match_id", "type_of_match", "month", "year", "diff_ranks", 
-     "ground_id", "country", "continent", "latitude", "longitude", "uniqueid", "draw", "outcome")
+match_cols <- c("url", "date", "day_n_night", "ground", "rain", "duckworth_lewis", "match_id", "type_of_match", "basic_type_of_match", "type_of_match2", 
+                 "di_type_of_match", "month", "year", "diff_ranks", "ground_id", "country", "continent", "latitude", "longitude", "uniqueid", "draw", "outcome")
 
 # Team cols, rename for gather/separate to work well
 team_cols <- c("team1", "team2", "team1_id", "team2_id", "team2_rank", "team1_rank", "team1_win_toss", "team2_win_toss", "team1_win_game", "team2_win_game")
 rename_cols <- c("team1.name", "team2.name", "team1.id", "team2.id", "team2.rank", "team1.rank", "team1.wintoss", "team2.wintoss", "team1.wingame", "team2.wingame")
-names(cricket)[names(cricket) %in% team_cols] <- rename_cols
+names(cricket)[match(team_cols, names(cricket))] <- rename_cols
 
 # Melt
 crickett <- cricket %>% gather(key, value, starts_with('team')) %>% separate(key, c("var", "col")) %>% arrange(url) %>% spread(col, value)
@@ -116,7 +69,6 @@ crickett <- cricket %>% gather(key, value, starts_with('team')) %>% separate(key
 "
 Recode, Fix Variable Type
 "
-# The game is drawn
 
 crickett$bat_bowl     <- ifelse(crickett$wintoss, crickett$bat_or_bowl, ifelse(crickett$bat_or_bowl=="bat", "bat", "bowl"))
 crickett$home_country <- crickett$country == crickett$name
@@ -126,6 +78,7 @@ crickett$wingame <- as.numeric(crickett$wingame)
 crickett$diff_ranks <- as.numeric(crickett$diff_ranks)
 
 crickett$signed_diff_ranks <- ifelse(crickett$var=="team1", crickett$diff_ranks, -1*crickett$diff_ranks)
+
 
 "
 Ad Hoc Data Integrity Checks
@@ -198,17 +151,15 @@ theme_base <- theme(panel.grid.major.y = element_line(colour = "#e3e3e3", linety
       legend.key         = element_rect(color="#ffffff", fill="#ffffff"),
       legend.key.size    = unit(.1,"cm"),
       legend.margin      = unit(.2,"cm"),
-      title              = element_text(size=8),
-      axis.title         = element_text(size=8),
-      axis.text          = element_text(size=8),
+      title              = element_text(size=8, colour = "#333333"),
+      axis.title         = element_text(size=8, colour = "#333333"),
+      axis.text          = element_text(size=8, colour = "#333333"),
       axis.ticks.y       = element_blank(),
       axis.ticks.x       = element_line(colour = '#f1f1f1'),
       strip.text.x       = element_text(size=9),
       legend.text        = element_text(size=8),
       plot.margin        = unit(c(0,.5,.5,.5), "cm"))
 
-# For figs - let us get type of match is nicer factor order
-crickett$type_of_match2 <- factor(crickett$type_of_match, levels=c("FC", "TEST", "LISTA", "ODI", "T20", "T20I"))
 
 # Bootstrap s.e.
 
@@ -234,7 +185,6 @@ boot.se <- function(dat, n_boots = 1000) {
 Win By Match Type
 "
 
-crickett$basic_type_of_match <- car::recode(crickett$type_of_match, "c('TEST', 'FC')='FC/TEST';c('T20','T20I')='T20/T20I';c('LISTA', 'ODI')='LISTA/ODI'")
 
 win_match_type <- ddply(crickett, ~basic_type_of_match, summarise, diff = mean(wingame[wintoss==1]) - mean(wingame[wintoss==0]), count=length(unique(url)))
 se <- ddply(crickett,  ~basic_type_of_match, function(x) c(se = boot.se(x)))
@@ -246,16 +196,16 @@ win_match_type$lci <-  win_match_type$diff - 2*win_match_type$se*100
 win_match_type$hci <-  win_match_type$diff + 2*win_match_type$se*100
 
 ggplot(win_match_type, aes(x=diff, y=basic_type_of_match, xmin = lci, xmax = hci)) + 
-geom_point(fill="#42c4c7") + 
-geom_errorbarh(height = 0) +
+geom_point(color="#aaaaaa") + 
+geom_errorbarh(height = 0, color="#42c4c7") +
 geom_vline(xintercept = 0, color="grey", linetype="dashed") + 
 theme_minimal() + 
 labs(y="",x="Difference", size=10) + 
 scale_x_continuous(breaks=seq(-2, 7, 1), labels= paste0(nolead0s(seq(-2, 7, 1)), "%"), limits=c(-2, 7), name="") +
 theme_base + 
 annotate("text", 
-   y = seq(1, nrow(win_match_type), 1), 
-   x = win_match_type$diff + .45, 
+   y = seq(1.1, nrow(win_match_type)+.4, 1), 
+   x = win_match_type$diff + .15, 
    label = paste0(round(win_match_type$diff,2), "% \n (n =", format(win_match_type$count, big.mark=",", scientific=FALSE), ")"), 
    colour = "#444444", 
    size = 2.5)
@@ -283,14 +233,21 @@ geom_vline(xintercept = 0, color="grey", linetype="dashed") +
 theme_minimal() + 
 ylab("") +
 scale_y_continuous(breaks=c(1.05,2.05), labels= c("LISTA/ODI", "T20/T20I"), limits=c(.5, 2.5), name="") +
-scale_color_discrete(name="", labels=c(" Day   ", " Day and Night")) + 
+scale_color_manual(name="", values = c("#2b8cbe", "#31a354"), labels=c(" Day   ", " Day and Night")) + 
 scale_x_continuous(breaks=seq(-4, 10, 2), labels= paste0(nolead0s(seq(-4, 10, 2)), "%"), limits=c(-3, 10), name="") +
 theme_base + 
+theme(legend.position="none") +
 annotate("text", 
    y = c(1.1,1.2,1.9,2.2), 
    x = ltd_day_n_night$diff + .175, 
    label = paste0(round(ltd_day_n_night$diff,2), "% \n (n =", format(ltd_day_n_night$count, big.mark=",", scientific=FALSE), ")"), 
    colour = "#444444", 
+   size = 2.5) +
+annotate("text", 
+   y = c(1,1.1, 2,2.1), 
+   x = ltd_day_n_night$hci + .75,
+   label = c("Day", "Day/Night", "Day", "Day/Night"), 
+   colour = c("#2b8cbe", "#31a354", "#2b8cbe", "#31a354"), 
    size = 2.5)
 ggsave("figs/winbyDayNight.pdf", width=5.5)
 
@@ -304,23 +261,31 @@ ltd_dl$se    <-  se$se[match(ltd_dl$basic_type_of_match, se$basic_type_of_match)
 ltd_dl$diff  <-  ltd_dl$diff*100
 ltd_dl$lci   <-  ltd_dl$diff - 2*ltd_dl$se*100
 ltd_dl$hci   <-  ltd_dl$diff + 2*ltd_dl$se*100
+ltd_dl$id    <- c(1,1.1,2,2.1)
 
-ggplot(ltd_dl, aes(y=basic_type_of_match, x=diff, xmin = lci, xmax = hci, color=factor(duckworth_lewis))) + 
+ggplot(ltd_dl, aes(y=id, x=diff, xmin = lci, xmax = hci, color=factor(duckworth_lewis))) + 
 geom_point() + 
 geom_errorbarh(height = 0) +
 geom_vline(xintercept = 0, color="grey", linetype="dashed") + 
-theme_minimal() + 
-ylab("") +
-scale_color_discrete(name="", labels=c(" No D/L   ", " Duckworth Lewis")) + 
-scale_x_continuous(breaks=seq(-2, 7, 1), labels= paste0(nolead0s(seq(-2, 7, 1)), "%"), limits=c(-2, 7), name="") +
-theme_base + 
+theme_minimal() +
+scale_y_continuous(breaks=c(1.05,2.05), labels= c("LISTA/ODI", "T20/T20I"), limits=c(.5, 2.5), name="") + 
+scale_color_manual(name="", values = c("#2b8cbe", "#31a354"), labels=c(" No D/L   ", " Duckworth Lewis")) + 
+scale_x_continuous(breaks=seq(-2, 7, 1), labels= paste0(nolead0s(seq(-2, 7, 1)), "%"), limits=c(-2, 7.4), name="") +
+theme_base +
+theme(legend.position="none") +
 annotate("text", 
-   y = c(1.1,1.1,2.1,2.1), 
+   y = c(1.1,1.2,1.9,2.2), 
    x = ltd_dl$diff,
    label = paste0(round(ltd_dl$diff,2), "% \n (n =", format(ltd_dl$count, big.mark=",", scientific=FALSE), ")"), 
    colour = "#444444", 
-   size = 2.5) 
-ggsave("figs/winbyDL.pdf", width=5)
+   size = 2.5) +
+annotate("text", 
+   y = c(1,1.1, 2,2.1), 
+   x = ltd_dl$hci + .4,
+   label = c("No D/L", "D/L", "No D/L", "D/L"), 
+   colour = c("#2b8cbe", "#31a354", "#2b8cbe", "#31a354"), 
+   size = 2.5)
+ggsave("figs/winbyDL.pdf", width=5.5)
 
 "
 Win by Diff. in ranks
@@ -336,10 +301,10 @@ rankcricket <- subset(crickett, !is.na(signed_diff_ranks))
 rankcricket$wingamer <- as.numeric(rankcricket$wingame)*100
 
 ggplot(rankcricket, aes(x=signed_diff_ranks, y=wingamer, colour=factor(wintoss))) + 
-geom_smooth(method="loess", span=.80, se=F) + 
+geom_smooth(method="loess", span=.80, se=F, size=.4) + 
 geom_vline(xintercept=0, col="#333333", linetype="dashed", alpha=.3, size=.1) +
 scale_x_continuous(breaks=seq(-30, 30, 10), labels=nolead0s(seq(-30, 30, 10)), limits=c(-30, 30), name="Difference in Ranking Points") +
-scale_colour_manual(values = c("#FF9999", "#42c4c7"), labels=c("Lose Toss", "Win Toss")) +
+scale_colour_manual(values = c("#2b8cbe", "#31a354"), labels=c("Lose Toss", "Win Toss")) +
 scale_y_continuous(breaks=seq(0, 100, 10), labels=paste0(nolead0s(seq(0, 100, 10)), "%"), limits=c(0, 100), name="Percentage Won/Drawn") + 
 theme_minimal() +  
 theme_base + 
@@ -349,7 +314,7 @@ theme(legend.position=c(.12, .85),
       legend.key.size = unit(.9, "line")) +
 facet_grid(. ~ type_of_match)
 
-ggsave("figs/winbyRank.pdf", width=7)
+ggsave("figs/winbyRank.pdf", width=8)
 
 "
 Is there over time learning? If so, toss adv. would increase. 
@@ -375,16 +340,16 @@ by_month$lci   <-  by_month$diff - 2*by_month$se*100
 by_month$hci   <-  by_month$diff + 2*by_month$se*100
 
 ggplot(by_month, aes(y=month, x=diff, xmin = lci, xmax = hci)) + 
-geom_point() + 
+geom_point(color="#aaaaaa") + 
 theme_minimal() + 
-geom_errorbarh(height = 0) +
+geom_errorbarh(height = 0, color="#42c4c7") +
 geom_vline(xintercept = 0, color="grey", linetype="dashed") + 
 ylab("") +
 scale_x_continuous(breaks=seq(-12, 12, 2), labels= paste0(nolead0s(seq(-12, 12, 2)), "%"), limits=c(-11, 11), name="") +
 theme_base + 
 annotate("text", 
-   y = seq(1, 6, 1), 
-   x = ifelse(by_month$diff > 0, by_month$diff + .35, by_month$diff - .35), 
+   y = seq(1.2, 6.6, 1), 
+   x = by_month$diff + .15, 
    label = paste0(round(by_month$diff,2), "% \n (n =", format(by_month$count, big.mark=",", scientific=FALSE), ")"), 
    colour = "#444444", 
    size = 2.5)
@@ -399,11 +364,15 @@ For this - we would want to do Win/Win Toss - Win/Lose Toss to adjust for team p
 small_set <- subset(crickett, name %in% c("India", "Australia", "West Indies", "England", "New Zealand", "Pakistan", "Sri Lanka"))
 
 by_country <- ddply(small_set, ~ name, summarise, diff = mean(wingame[wintoss==1]) - mean(wingame[wintoss==0]), count=length(unique(url)))
-by_country$diff <- by_country$diff*100
+by_country$diff  <-  by_country$diff*100
+se               <-  ddply(small_set,  ~name, function(x) c(se = boot.se(x)))
+by_country$se    <-  se$se[match(by_country$name, se$name)]
+by_country$lci   <-  by_country$diff - 2*by_country$se*100
+by_country$hci   <-  by_country$diff + 2*by_country$se*100
 
 ggplot(by_country, aes(y=name, x=diff, xmin = lci, xmax = hci)) + 
-geom_point() + 
-geom_errorbarh(height = 0) +
+geom_point(color="#aaaaaa") + 
+geom_errorbarh(height = 0, color="#42c4c7") +
 geom_vline(xintercept = 0, color="grey", linetype="dashed") + 
 theme_minimal() + 
 ylab("") +
