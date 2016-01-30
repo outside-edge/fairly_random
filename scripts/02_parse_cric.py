@@ -50,20 +50,20 @@ with open("final_output.csv", "wb") as csvfile:
                         ump_1 = umpires[0]
                         ump_2 = umpires[1]
                     elif len(umpires) == 0:
-                        ump_1 = {'object_id': None, 'known_as': None, 'team_abbreviation': None}
-                        ump_2 = {'object_id': None, 'known_as': None, 'team_abbreviation': None}
+                        ump_1 = {'object_id': None, 'known_as': None, 'team_name': None}
+                        ump_2 = {'object_id': None, 'known_as': None, 'team_name': None}
                     else:
                         ump_1 = umpires[0]
-                        ump_2 = {'object_id': None, 'known_as': None, 'team_abbreviation': None}
+                        ump_2 = {'object_id': None, 'known_as': None, 'team_name': None}
                 else:
-                    ump_1 = {'object_id': None, 'known_as': None, 'team_abbreviation': None}
-                    ump_2 = {'object_id': None, 'known_as': None, 'team_abbreviation': None}
+                    ump_1 = {'object_id': None, 'known_as': None, 'team_name': None}
+                    ump_2 = {'object_id': None, 'known_as': None, 'team_name': None}
             except ValueError:
                 raise
             if len(tv_ump) > 0:
                 tvu_id = tv_ump[0]['object_id']
                 tvu_name = tv_ump[0]['known_as']
-                tvu_country = tv_ump[0]['team_abbreviation']
+                tvu_country = tv_ump[0]['team_name']
             else:
                 tvu_id = None
                 tvu_name = None
@@ -71,12 +71,12 @@ with open("final_output.csv", "wb") as csvfile:
             if len(match_ref) > 0:
                 mr_id = match_ref[0]['object_id']
                 mr_name = match_ref[0]['known_as']
-                mr_country = match_ref[0]['team_abbreviation']
+                mr_country = match_ref[0]['team_name']
             else:
                 mr_id = None
                 mr_name = None
                 mr_country = None
-            writer.writerow([m.team_1()['team_name'], m.team_1_id(), m.team_2()['team_name'], m.team_2_id(), m.toss_winner(), m.toss_decision(), m.result(), m.match_json()['winner_team_id'], m.date(), m.lighting(), m.ground_name(), None, duckworth_lewis, match, m.match_class(), match_type_id, m.match_json()['home_team_id'], ump_1['object_id'], ump_1['known_as'], ump_1['team_abbreviation'], ump_2['object_id'], ump_2['known_as'], ump_2['team_abbreviation'], tvu_id, tvu_name, tvu_country, mr_id, mr_name, mr_country, m.match_url])
+            writer.writerow([m.team_1()['team_name'], m.team_1_id(), m.team_2()['team_name'], m.team_2_id(), m.toss_winner(), m.toss_decision(), m.result(), m.match_json()['winner_team_id'], m.date(), m.lighting(), m.ground_name(), None, duckworth_lewis, match, m.match_class(), match_type_id, m.match_json()['home_team_id'], ump_1['object_id'], ump_1['known_as'], ump_1['team_name'], ump_2['object_id'], ump_2['known_as'], ump_2['team_name'], tvu_id, tvu_name, tvu_country, mr_id, mr_name, mr_country, m.match_url])
         except simplejson.scanner.JSONDecodeError:
             continue
 
