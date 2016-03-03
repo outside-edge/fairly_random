@@ -149,7 +149,7 @@ match$win_toss_win_game <- ((match$team1_win_toss & match$team1_win_game==1) | (
 match$team1_home_country  <- match$country == match$team1
 match$team2_home_country  <- match$country == match$team2
 match$team1_home_country[!match$team1_home_country & !match$team2_home_country] <- NA
-match$team2_home_country[!match$team1_home_country & !match$team2_home_country] <- NA
+match$team2_home_country[is.na(match$team1_home_country)] <- NA
 
 # Home country wins toss
 match$home_wins_toss  <- 0
