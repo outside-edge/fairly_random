@@ -164,3 +164,6 @@ match$team2_home_umpire2 <- match$team2 == match$umpire_2_country
 
 match$team1_home_tv_umpire <- match$team1 == match$tv_umpire_country
 match$team2_home_tv_umpire <- match$team2 == match$tv_umpire_country
+
+match$team1_home_umpire <- rowSums(cbind(match$team1_home_umpire1, match$team1_home_umpire2, match$team1_home_tv_umpire))
+match$team2_home_umpire <- rowSums(cbind(match$team2_home_umpire1, match$team2_home_umpire2, match$team2_home_tv_umpire))
