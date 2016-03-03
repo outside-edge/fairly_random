@@ -48,6 +48,8 @@ Takes out 2384 matches
 
 cricket <- subset(cricket, bat_or_bowl!="")
 
+# Prop. who win toss, win game. (not including draws)
+table(cricket$win_toss_win_game, cricket$basic_type_of_match)
 
 "
 Melt the data
@@ -55,16 +57,25 @@ Two rows per match
 "
 
 # Match level vars: 
-match_cols <- c("url", "date", "day_n_night", "ground", "rain", "duckworth_lewis", "match_id", "type_of_match", "basic_type_of_match", "type_of_match2", 
-                 "di_type_of_match", "month", "year", "diff_ranks", "ground_id", "country", "continent", "latitude", "longitude", "uniqueid", "draw", "outcome")
+match_cols <- c("url", "match_id", "uniqueid", "date", "month", "day", "year", "rain", 
+                 "type_of_match", "basic_type_of_match", "type_of_match2", "di_type_of_match", "men_type_of_match", "day_n_night", "youth", "women", "youth.women", "unofficial", "duckworth_lewis", 
+                 "win_toss", "win_game", "home_wins_toss", "draw", "outcome", "diff_ranks", "bat_or_bowl", 
+                 "ground", "ground_id", "country", "continent", "latitude", "longitude")
 
 # Team cols, rename for gather/separate to work well
-team_cols <- c("team1", "team2", "team1_id", "team2_id", "team2_rank", "team1_rank", "team1_win_toss", "team2_win_toss", "team1_win_game", "team2_win_game")
-rename_cols <- c("team1.name", "team2.name", "team1.id", "team2.id", "team2.rank", "team1.rank", "team1.wintoss", "team2.wintoss", "team1.wingame", "team2.wingame")
+team_cols <- c("team1", "team2", "team1_id", "team2_id", "team2_rank", "team1_rank", "team1_win_toss", "team2_win_toss", "team1_win_game", "team2_win_game", 
+               "team1_home_country", "team2_home_country", 
+               "team1_umpire1", "team2_umpire1", "team1_umpire2", "team2_umpire2", "team1_tv_umpire", "team2_tv_umpire", "team1_umpire", "team2_umpire")
+rename_cols <- c("team1.name", "team2.name", "team1.id", "team2.id", "team2.rank", "team1.rank", "team1.wintoss", "team2.wintoss", "team1.wingame", "team2.wingame",
+               "team1.homecountry", "team2.homecountry", 
+               "team1.umpire1", "team2.umpire1", "team1.umpire2", "team2.umpire2", "team1.tvumpire", "team2.tvumpire", "team1.umpire", "team2.umpire")
 names(cricket)[match(team_cols, names(cricket))] <- rename_cols
 
+small_cricket <- subset(cricket, select=c(match_cols, rename_cols))
+
+
 # Melt
-crickett <- cricket %>% gather(key, value, starts_with('team')) %>% separate(key, c("var", "col")) %>% arrange(url) %>% spread(col, value)
+crickett <- small_cricket %>% gather(key, value, starts_with('team')) %>% separate(key, c("var", "col")) %>% arrange(url) %>% spread(col, value)
 
 "
 Recode, Fix Variable Type
@@ -72,13 +83,13 @@ Recode, Fix Variable Type
 
 crickett$bat_bowl     <- ifelse(crickett$wintoss, crickett$bat_or_bowl, ifelse(crickett$bat_or_bowl=="bat", "bat", "bowl"))
 crickett$home_country <- crickett$country == crickett$name
+crickett$home_country[is.na(crickett$homecountry)] <- NA
 
 crickett$wintoss <- as.numeric(crickett$wintoss)
 crickett$wingame <- as.numeric(crickett$wingame)
 crickett$diff_ranks <- as.numeric(crickett$diff_ranks)
 
 crickett$signed_diff_ranks <- ifelse(crickett$var=="team1", crickett$diff_ranks, -1*crickett$diff_ranks)
-
 
 "
 Ad Hoc Data Integrity Checks
@@ -99,9 +110,9 @@ Analysis
 # Proportion of tosses won in home country
 # Proportion of tosses won when playing away from home
 
-homet <- with(crickett[(crickett$home_country_data==1),], xtabs( ~ home_country + wintoss))
+homet <- with(crickett[!is.na(crickett$home_country),], xtabs( ~ home_country + wintoss))
 homet/rowSums(homet)
-binom.test(2860, 5591, p=.5)
+binom.test(2892, 5774, p=.5)
 
 "
 Note: 
@@ -191,7 +202,7 @@ se <- ddply(crickett,  ~basic_type_of_match, function(x) c(se = boot.se(x)))
 win_match_type$se   <- se$se[match(win_match_type$basic_type_of_match, se$basic_type_of_match)]
 win_match_type$diff <- win_match_type$diff*100
 win_match_type$basic_type_of_match <- factor(win_match_type$basic_type_of_match, levels=c("T20/T20I", "LISTA/ODI", "FC/TEST"))
-win_match_type <- win_match_type[order(win_match_type$basic_type_of_match),]
+win_match_type     <- win_match_type[order(win_match_type$basic_type_of_match),]
 win_match_type$lci <-  win_match_type$diff - 2*win_match_type$se*100
 win_match_type$hci <-  win_match_type$diff + 2*win_match_type$se*100
 
@@ -280,8 +291,8 @@ annotate("text",
    colour = "#444444", 
    size = 2.5) +
 annotate("text", 
-   y = c(1,1.1, 2,2.1), 
-   x = ltd_dl$hci + .4,
+   y = c(1, 1.1, 2, 2.1), 
+   x = ltd_dl$hci + c(.45, .35, .45, .35),
    label = c("No D/L", "D/L", "No D/L", "D/L"), 
    colour = c("#2b8cbe", "#31a354", "#2b8cbe", "#31a354"), 
    size = 2.5)
@@ -332,12 +343,12 @@ by_month <- ddply(eng_season, ~ month, summarise, diff = mean(wingame[wintoss==1
 by_month <- subset(by_month, month!=3) # only 5 matches
 by_month$month <- month.abb[by_month$month]
 by_month$diff <- by_month$diff*100
-by_month <- by_month[order(by_month$month),]
 
 se             <-  ddply(eng_season,  ~month, function(x) c(se = boot.se(x)))
 by_month$se    <-  se$se[match(by_month$month, month.abb[se$month])]
 by_month$lci   <-  by_month$diff - 2*by_month$se*100
 by_month$hci   <-  by_month$diff + 2*by_month$se*100
+by_month$month <- ordered(by_month$month, month.abb)
 
 ggplot(by_month, aes(y=month, x=diff, xmin = lci, xmax = hci)) + 
 geom_point(color="#aaaaaa") + 
@@ -376,7 +387,7 @@ geom_errorbarh(height = 0, color="#42c4c7") +
 geom_vline(xintercept = 0, color="grey", linetype="dashed") + 
 theme_minimal() + 
 ylab("") +
-scale_x_continuous(breaks=seq(-3, 7, 1), labels= paste0(nolead0s(seq(-3, 7, 1)), "%"), limits=c(-3, 7), name="") +
+scale_x_continuous(breaks=seq(-10, 10, 2), labels= paste0(nolead0s(seq(-10, 10, 2)), "%"), limits=c(-10, 10), name="") +
 theme_base + 
 annotate("text", 
    y = seq(1, 7, 1), 
@@ -386,4 +397,8 @@ annotate("text",
    size = 2.5)
 ggsave("figs/winbyCountry.pdf", width=6)
 
+
+# Split by Home Umpires on Winning Toss
+# It was tested out with 1 umpire beginning in 1992 and then made standard with 2 in 2002: 
+# http://www.espncricinfo.com/magazine/content/story/511175.html
 
