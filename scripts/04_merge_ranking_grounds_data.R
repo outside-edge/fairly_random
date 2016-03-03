@@ -87,6 +87,9 @@ match$di_type_of_match <- car::recode(match$type_of_match, "c('LISTA', 'T20', 'F
 # Distinguish Men's ODI, Test, T20I from rest as rankings only for men's 
 match$men_type_of_match <- ifelse(match$women | match$youth | match$unofficial, paste0("WYU", match$type_of_match), match$type_of_match)
 
+# Fix Day/Night
+match$day_n_night <- ifelse(match$day_n_night=="night match", "day/night match", match$day_n_night)
+
 # Go for exact match
 # Unique_ID1, Unique_ID2
 match$team1_spid <- with(match, tolower(paste0(men_type_of_match, team1, month, year)))
@@ -128,6 +131,9 @@ match$uniqueid <- 1:nrow(match)
 # Drawn Matches
 match$draw <- 1*grepl("Match drawn", match$outcome)
 
+# Data integrity check: 
+table(match$draw, match$basic_type_of_match)
+
 # Win toss, win game
 match$team1_win_toss <- 1*(match$team1_id==match$win_toss)
 match$team2_win_toss <- 1*(match$team2_id==match$win_toss)
@@ -137,11 +143,24 @@ match$team1_win_game[match$draw==1] <- .5
 match$team2_win_game[match$draw==1] <- .5
 
 # Home country
-match$home_country_data  <- match$country == match$team1 | match$country==match$team2
+match$team1_home_country  <- match$country == match$team1
+match$team2_home_country  <- match$country == match$team2
+match$team1_home_country[!match$team1_home_country & !match$team2_home_country] <- NA
+match$team2_home_country[!match$team1_home_country & !match$team2_home_country] <- NA
 
 # Home country wins toss
-match$home_wins_toss  <- ifelse(match$home_team_id==match$team1_id, match$team1_win_toss, match$team2_win_toss)
-# with(cricket[match$home_country_data==1,], mean(home_wins_toss))
+match$home_wins_toss  <- 0
+match$home_wins_toss[!is.na(match$team1_home_country) & match$team1_home_country & match$team1_win_toss] <- 1
+match$home_wins_toss[!is.na(match$team1_home_country) & match$team2_home_country & match$team2_win_toss] <- 1
+match$home_wins_toss[is.na(match$team1_home_country)] <- NA
 
-# Fix Day/Night
-match$day_n_night <- ifelse(match$day_n_night=="night match", "day/night match", match$day_n_night)
+# Umpiring
+# It was tested out with 1 umpire beginning in 1992 and then made standard with 2 in 2002: http://www.espncricinfo.com/magazine/content/story/511175.html
+match$team1_home_umpire1 <- match$team1 == match$umpire_1_country
+match$team2_home_umpire1 <- match$team2 == match$umpire_1_country
+
+match$team1_home_umpire2 <- match$team1 == match$umpire_2_country
+match$team2_home_umpire2 <- match$team2 == match$umpire_2_country
+
+match$team1_home_tv_umpire <- match$team1 == match$tv_umpire_country
+match$team2_home_tv_umpire <- match$team2 == match$tv_umpire_country
