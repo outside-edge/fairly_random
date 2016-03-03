@@ -160,13 +160,20 @@ match$home_wins_toss[is.na(match$team1_home_country)] <- NA
 # Umpiring
 # It was tested out with 1 umpire beginning in 1992 and then made standard with 2 in 2002: http://www.espncricinfo.com/magazine/content/story/511175.html
 match$team1_umpire1 <- match$team1 == match$umpire_1_country
+match$team1_umpire1[match$umpire_1_country==""] <- NA
 match$team2_umpire1 <- match$team2 == match$umpire_1_country
+match$team2_umpire1[match$umpire_1_country==""] <- NA
 
 match$team1_umpire2 <- match$team1 == match$umpire_2_country
+match$team1_umpire2[match$umpire_2_country==""] <- NA
 match$team2_umpire2 <- match$team2 == match$umpire_2_country
+match$team2_umpire2[match$umpire_2_country==""] <- NA
+
 
 match$team1_tv_umpire <- match$team1 == match$tv_umpire_country
+match$team1_tv_umpire[match$tv_umpire_country==""] <- NA
 match$team2_tv_umpire <- match$team2 == match$tv_umpire_country
+match$team2_tv_umpire[match$tv_umpire_country==""] <- NA
 
-match$team1_umpire <- rowSums(cbind(match$team1_umpire1, match$team1_umpire2, match$team1_tv_umpire))
-match$team2_umpire <- rowSums(cbind(match$team2_umpire1, match$team2_umpire2, match$team2_tv_umpire))
+match$team1_umpire <- rowSums(cbind(match$team1_umpire1, match$team1_umpire2, match$team1_tv_umpire), na.rm=T)
+match$team2_umpire <- rowSums(cbind(match$team2_umpire1, match$team2_umpire2, match$team2_tv_umpire), na.rm=T)

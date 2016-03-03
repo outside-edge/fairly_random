@@ -398,7 +398,15 @@ annotate("text",
 ggsave("figs/winbyCountry.pdf", width=6)
 
 
-# Split by Home Umpires on Winning Toss
+# Split by Home Umpires on Winning Toss and Winning Match
 # It was tested out with 1 umpire beginning in 1992 and then made standard with 2 in 2002: 
 # http://www.espncricinfo.com/magazine/content/story/511175.html
+
+# Only international matches
+with(crickett[!is.na(crickett$umpire1) & !is.na(crickett$umpire2) & crickett$di_type_of_match=="International",], xtabs( ~ umpire + wintoss))
+with(crickett[!is.na(crickett$umpire1) & !is.na(crickett$umpire2) & crickett$di_type_of_match=="International",], xtabs( ~ umpire + wingame))
+
+# By Type of Match
+ddply(crickett[!is.na(crickett$umpire1) & !is.na(crickett$umpire2) & crickett$di_type_of_match=="International",], ~ umpire, summarise, win_toss = mean(wintoss==1), lose_toss = mean(wintoss==0), n = length(unique(uniqueid)),  se_win=2*sqrt(win_toss*(1-win_toss)/n))
+ddply(crickett[!is.na(crickett$umpire1) & !is.na(crickett$umpire2) & crickett$di_type_of_match=="International",], ~ umpire, summarise, win_game = mean(wingame==1), lose_game = mean(wintoss==0), n = length(unique(uniqueid)),  se_win=2*sqrt(win_game*(1-win_game)/n))
 
