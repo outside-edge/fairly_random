@@ -32,21 +32,29 @@ sum(match$team2=='')
 "
 
 "
-Take out matches where there was no result. See for e.g.,
-http://www.espncricinfo.com/matches/engine/match/329869.html
-
-Takes out 780 matches
-"
-temp <- grepl("No result", match$outcome)
-cricket <- subset(match, !temp)
-
-"
 Take out matches where decision on who bowled/batted first is unknown. See this, for e.g.:
 http://www.espncricinfo.com/matches/engine/match/537589.html 
-Takes out 2384 matches
+
+Takes out abandoned matches
+# abandoned
+table(match$bat_or_bowl, grepl('abandon', match$outcome))
+# 1019
+
+
+Takes out 3164 matches
 "
 
-cricket <- subset(cricket, bat_or_bowl!="")
+cricket <- subset(match, bat_or_bowl!="")
+
+"
+Takes out matches where there was no result. See for e.g.,
+http://www.espncricinfo.com/matches/engine/match/329869.html
+"
+
+temp <- grepl('No result', cricket$outcome)
+cricket <- subset(cricket, !temp)
+
+# ---------------- 
 
 # Prop. who win toss, win game. (not including draws)
 table(cricket$win_toss_win_game, cricket$basic_type_of_match)
@@ -104,7 +112,7 @@ crickett$name[!is.na(crickett$signed_diff_ranks) & crickett$signed_diff_ranks > 
 "
 Analysis
 
-1. Do teams win more tosses at home?
+1a. Do teams win more tosses at home?
    Evidence from International Matches
 "
 # Proportion of tosses won in home country
@@ -112,7 +120,25 @@ Analysis
 
 homet <- with(crickett[!is.na(crickett$home_country),], xtabs( ~ home_country + wintoss))
 homet/rowSums(homet)
-binom.test(2892, 5774, p=.5)
+binom.test(2892, 5684, p=.5)
+
+"
+1b. Do team win more matches when matches officiated by home umpires?
+
+"
+# Split by Home Umpires on Winning Toss and Winning Match
+# It was tested out with 1 umpire beginning in 1992 and then made standard with 2 in 2002: 
+# http://www.espncricinfo.com/magazine/content/story/511175.html
+
+# Only international matches
+with(crickett[!is.na(crickett$umpire1) & !is.na(crickett$umpire2) & crickett$di_type_of_match=="International",], xtabs( ~ umpire + wintoss))
+with(crickett[!is.na(crickett$umpire1) & !is.na(crickett$umpire2) & crickett$di_type_of_match=="International",], xtabs( ~ umpire + wingame))
+
+# By Type of Match
+ddply(crickett[!is.na(crickett$umpire1) & !is.na(crickett$umpire2) & crickett$di_type_of_match=="International",], ~ umpire, summarise, win_toss = mean(wintoss==1), lose_toss = mean(wintoss==0), n = length(unique(uniqueid)),  se_win=2*sqrt(win_toss*(1-win_toss)/n))
+ddply(crickett[!is.na(crickett$umpire1) & !is.na(crickett$umpire2) & crickett$di_type_of_match=="International",], ~ umpire, summarise, win_game = mean(wingame==1), lose_game = mean(wintoss==0), n = length(unique(uniqueid)),  se_win=2*sqrt(win_game*(1-win_game)/n))
+
+binom.test(1539, 2965, p=.5)
 
 "
 Note: 
@@ -396,17 +422,4 @@ annotate("text",
    colour = "#444444", 
    size = 2.5)
 ggsave("figs/winbyCountry.pdf", width=6)
-
-
-# Split by Home Umpires on Winning Toss and Winning Match
-# It was tested out with 1 umpire beginning in 1992 and then made standard with 2 in 2002: 
-# http://www.espncricinfo.com/magazine/content/story/511175.html
-
-# Only international matches
-with(crickett[!is.na(crickett$umpire1) & !is.na(crickett$umpire2) & crickett$di_type_of_match=="International",], xtabs( ~ umpire + wintoss))
-with(crickett[!is.na(crickett$umpire1) & !is.na(crickett$umpire2) & crickett$di_type_of_match=="International",], xtabs( ~ umpire + wingame))
-
-# By Type of Match
-ddply(crickett[!is.na(crickett$umpire1) & !is.na(crickett$umpire2) & crickett$di_type_of_match=="International",], ~ umpire, summarise, win_toss = mean(wintoss==1), lose_toss = mean(wintoss==0), n = length(unique(uniqueid)),  se_win=2*sqrt(win_toss*(1-win_toss)/n))
-ddply(crickett[!is.na(crickett$umpire1) & !is.na(crickett$umpire2) & crickett$di_type_of_match=="International",], ~ umpire, summarise, win_game = mean(wingame==1), lose_game = mean(wintoss==0), n = length(unique(uniqueid)),  se_win=2*sqrt(win_game*(1-win_game)/n))
 
