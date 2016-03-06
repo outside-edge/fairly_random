@@ -132,6 +132,7 @@ binom.test(2892, 5684, p=.5)
 
 # Only international matches
 with(crickett[!is.na(crickett$umpire1) & !is.na(crickett$umpire2) & crickett$di_type_of_match=="International",], xtabs( ~ umpire + wintoss))
+# with(crickett[!is.na(crickett$umpire1) & !is.na(crickett$umpire2) & crickett$di_type_of_match=="International",], xtabs( ~ umpire + wintoss + country))
 with(crickett[!is.na(crickett$umpire1) & !is.na(crickett$umpire2) & crickett$di_type_of_match=="International",], xtabs( ~ umpire + wingame))
 
 # By Type of Match
@@ -196,7 +197,6 @@ theme_base <- theme(panel.grid.major.y = element_line(colour = "#e3e3e3", linety
       strip.text.x       = element_text(size=9),
       legend.text        = element_text(size=8),
       plot.margin        = unit(c(0,.5,.5,.5), "cm"))
-
 
 # Bootstrap s.e.
 
@@ -334,14 +334,16 @@ crickett$name[!is.na(crickett$signed_diff_ranks) & crickett$signed_diff_ranks < 
 crickett$name[!is.na(crickett$signed_diff_ranks) & crickett$signed_diff_ranks > 110]
 "
 
-rankcricket <- subset(crickett, !is.na(signed_diff_ranks))
+rankcricket <- subset(crickett, !is.na(signed_diff_ranks) & wintoss==1)
 rankcricket$wingamer <- as.numeric(rankcricket$wingame)*100
 
-ggplot(rankcricket, aes(x=signed_diff_ranks, y=wingamer, colour=factor(wintoss))) + 
-geom_smooth(method="loess", span=.80, se=F, size=.4) + 
+library(lme4)
+summary(with(rankcricket, lm(wingamer ~ zero1(signed_diff_ranks))))
+
+ggplot(rankcricket, aes(x=signed_diff_ranks, y=wingamer)) + 
+geom_smooth(size=.4, col="#2b8cbe") + 
 geom_vline(xintercept=0, col="#333333", linetype="dashed", alpha=.3, size=.1) +
-scale_x_continuous(breaks=seq(-30, 30, 10), labels=nolead0s(seq(-30, 30, 10)), limits=c(-30, 30), name="Difference in Ranking Points") +
-scale_colour_manual(values = c("#2b8cbe", "#31a354"), labels=c("Lose Toss", "Win Toss")) +
+scale_x_continuous(breaks=seq(-150, 150, 30), labels=nolead0s(seq(-150, 150, 30)), limits=c(-134, 134), name="Difference in Ranking Points") +
 scale_y_continuous(breaks=seq(0, 100, 10), labels=paste0(nolead0s(seq(0, 100, 10)), "%"), limits=c(0, 100), name="Percentage Won/Drawn") + 
 theme_minimal() +  
 theme_base + 
@@ -352,13 +354,6 @@ theme(legend.position=c(.12, .85),
 facet_grid(. ~ type_of_match)
 
 ggsave("figs/winbyRank.pdf", width=8)
-
-"
-Is there over time learning? If so, toss adv. would increase. 
-Or it could be that teams develop better strategies to offset toss advantage. 
-If you are going to come up short half the times, you develop strategies to counter that.
-But lots of moving parts for over time stuff. For instance, format is a concern. Certain formats not around earlier.
-" 
 
 "
 Early English Season
@@ -423,3 +418,9 @@ annotate("text",
    size = 2.5)
 ggsave("figs/winbyCountry.pdf", width=6)
 
+"
+Is there over time learning? If so, toss adv. would increase. 
+Or it could be that teams develop better strategies to offset toss advantage. 
+If you are going to come up short half the times, you develop strategies to counter that.
+But lots of moving parts for over time stuff. For instance, format is a concern. Certain formats not around earlier.
+" 
