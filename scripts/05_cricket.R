@@ -419,6 +419,14 @@ annotate("text",
 ggsave("figs/winbyCountry.pdf", width=6)
 
 "
+Domestic Verus International
+Presumably diff. smaller in international
+"
+ddply(crickett, ~di_type_of_match + wintoss, summarise, mean=mean(wingame))
+ddply(crickett, ~basic_type_of_match + di_type_of_match + wintoss, summarise, mean=mean(wingame))
+
+
+"
 Is there over time learning? If so, toss adv. would increase. 
 Or it could be that teams develop better strategies to offset toss advantage. 
 If you are going to come up short half the times, you develop strategies to counter that.
@@ -432,4 +440,3 @@ ddply(crickett[crickett$wingame==1,], ~ wintoss + basic_type_of_match, summarise
 ddply(crickett[crickett$wingame==1,], ~ wintoss + basic_type_of_match, summarise, runs = mean(runs, na.rm=T))
 ddply(crickett[crickett$basic_type_of_match!="FC/TEST" & crickett$wingame==1,], ~ wintoss + basic_type_of_match, summarise, balls = mean(balls, na.rm=T))
 ddply(crickett[crickett$basic_type_of_match=="FC/TEST" & crickett$wingame==1,], ~ wintoss, summarise, innings = mean(innings, na.rm=T))
-
