@@ -65,9 +65,9 @@ Two rows per match
 "
 
 # Match level vars: 
-match_cols <- c("url", "match_id", "uniqueid", "date", "month", "day", "year", "rain", 
+match_cols <- c("url", "match_id", "uniqueid", "date", "month", "day", "year", "rain",  "diff_ranks", "bat_or_bowl", 
                  "type_of_match", "basic_type_of_match", "type_of_match2", "di_type_of_match", "men_type_of_match", "day_n_night", "youth", "women", "youth.women", "unofficial", "duckworth_lewis", 
-                 "win_toss", "win_game", "home_wins_toss", "draw", "outcome", "diff_ranks", "bat_or_bowl", 
+                 "win_toss", "win_game", "home_wins_toss", "draw", "outcome", "wickets", "runs", "balls", "innings", 
                  "ground", "ground_id", "country", "continent", "latitude", "longitude")
 
 # Team cols, rename for gather/separate to work well
@@ -424,3 +424,12 @@ Or it could be that teams develop better strategies to offset toss advantage.
 If you are going to come up short half the times, you develop strategies to counter that.
 But lots of moving parts for over time stuff. For instance, format is a concern. Certain formats not around earlier.
 " 
+small_set <- subset(crickett, name %in% c("India", "Australia", "West Indies", "England", "New Zealand", "Pakistan", "Sri Lanka"))
+ddply(crickett, ~ year + name, summarise, diff = mean(wingame[wintoss==1]) - mean(wingame[wintoss==0]), count=length(unique(url)))
+
+# Margin of victory
+ddply(crickett[crickett$wingame==1,], ~ wintoss + basic_type_of_match, summarise, wickets = mean(wickets, na.rm=T))
+ddply(crickett[crickett$wingame==1,], ~ wintoss + basic_type_of_match, summarise, runs = mean(runs, na.rm=T))
+ddply(crickett[crickett$basic_type_of_match!="FC/TEST" & crickett$wingame==1,], ~ wintoss + basic_type_of_match, summarise, balls = mean(balls, na.rm=T))
+ddply(crickett[crickett$basic_type_of_match=="FC/TEST" & crickett$wingame==1,], ~ wintoss, summarise, innings = mean(innings, na.rm=T))
+

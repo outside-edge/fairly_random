@@ -177,3 +177,12 @@ match$team2_tv_umpire[match$tv_umpire_country==""] <- NA
 
 match$team1_umpire <- rowSums(cbind(match$team1_umpire1, match$team1_umpire2, match$team1_tv_umpire), na.rm=T)
 match$team2_umpire <- rowSums(cbind(match$team2_umpire1, match$team2_umpire2, match$team2_tv_umpire), na.rm=T)
+
+# Margin of victory
+# number of runs, balls, wickets, innings
+split_by <- sapply(strsplit(match$outcome, " by "), "[", 2)
+
+match$wickets  <- as.numeric(sapply(strsplit(split_by, " wicket"), "[", 1))
+match$runs     <- as.numeric(sapply(strsplit(split_by, " runs"), "[", 1))
+match$balls    <- as.numeric(sapply(strsplit(sapply(strsplit(split_by, "with "), "[", 2), " ball"), "[", 1))
+match$innings  <- grepl("inning", split_by)
