@@ -36,12 +36,12 @@
 \raggedright
 \parindent=1.5em % <- or whatever indent you want
 
-\usepackage{natbib}
+\usepackage[authoryear]{natbib}
 \usepackage{url}
 \begin{comment}
 
 setwd(paste0(githubdir, "/cricket-stats/write_up/"))	
-tools::texi2dvi("cricket.tex", pdf=TRUE, clean=TRUE)	
+tools::texi2dvi("cricket.tex", pdf=TRUE)	
 setwd(paste0(githubdir, "/cricket-stats/"))
 
 \end{comment}
@@ -51,7 +51,7 @@ setwd(paste0(githubdir, "/cricket-stats/"))
 \author{\normalsize{Gaurav Sood}\footnote{Gaurav is an independent researcher. He can be reached at: \href{mailto:gsood07@gmail.com}{\small{gsood07@gmail.com}}} \and \normalsize{Derek Willis}\footnote{Derek is a  news applications developer at ProPublica. He can be reached at: \href{mailto:dwillis@gmail.com}{\small{dwillis@gmail.com}}}}
 \date{\vspace{.5cm}\normalsize{\today}}
 \maketitle
-\doublespacing
+
 
 \begin{center}\textbf{Abstract}\\\end{center}
 In a competitive sport, every little thing matters. Yet, many sports leave some large levers out of the reach of the teams, and in the hands of fate. In cricket, world's second most popular sport by some measures, \footnote{See \citet{Economist2011} in The Economist.} one such lever---the toss---has been subject to much recent attention. Using a large novel dataset of 44,224 cricket matches, we estimate the impact of winning the toss on the probability of winning. The data suggest that winning the toss increases the chance of winning by a small ($\sim$ 2.8\%) but significant margin. The advantage varies heftily and systematically, by how closely matched the competing teams are, and by playing conditions---tautologically, winning the toss in conditions where the toss grants a greater advantage, for e.g., in day and night matches, has a larger impact on the probability of winning.  
@@ -89,7 +89,7 @@ The conventional wisdom among lay cricket followers is that toss grants the grea
 \begin{figure}[htbp]
 \caption{Difference in Winning Percentages of Teams that Won the Toss and Teams that Lost the Toss by Type of Match.}
 \centering
-\includegraphics[scale=1]{../figs/winbyType.pdf}
+\includegraphics[scale=1]{winbyType.pdf}
 {\footnotesize \\ Note: Means and 95\% confidence intervals. \emph{n} refers to the number of matches.\par}
 \label{fig:type}
 \end{figure}
@@ -99,7 +99,7 @@ Type of matches are but one source of variation and theorizing about the advanta
 \begin{figure}[htbp]
 \centering
 \caption{Difference in Winning Percentages of Teams that Won the Toss and Teams that Lost the Toss by Day or Day and Night}
-\includegraphics[scale=.95]{../figs/winbyDayNight.pdf}
+\includegraphics[scale=.95]{winbyDayNight.pdf}
 {\footnotesize \\ Note: Means and 95\% confidence intervals. \emph{n} refers to the number of matches.\par}
 \label{fig:dn}
 \end{figure}
@@ -111,7 +111,7 @@ There is some evidence of a seasonal pattern, with advantage of winning the toss
 \begin{figure}[htbp]
 \centering
 \caption{Difference in Winning Percentages of Teams that Won the Toss and Teams that Lost the Toss by Month in England}
-\includegraphics[scale=1]{../figs/winbyMonthEngland.pdf}
+\includegraphics[scale=1]{winbyMonthEngland.pdf}
 {\footnotesize \\ Note: Means and 95\% confidence intervals. \emph{n} refers to the number of matches.\par}
 \label{fig:season}
 \end{figure}
@@ -125,7 +125,7 @@ In both one-day and Twenty20 matches, the advantage of winning the toss in a mat
 \begin{figure}[htbp]
 \centering
 \caption{Difference in Winning Percentages of Teams that Won the Toss and Teams that Lost the Toss by Whether or not Duckworth-Lewis was invoked}
-\includegraphics[scale=1]{../figs/winbyDL.pdf}
+\includegraphics[scale=1]{winbyDL.pdf}
 {\footnotesize \\ Note: Means and 95\% confidence intervals. \emph{n} refers to the number of matches.\par}
 \label{fig:dl}
 \end{figure}
@@ -139,7 +139,7 @@ The results are expected, but new. As Figure ~\ref{fig:ranks} --- which plots pe
 \begin{figure}[htbp]
 \centering
 \caption{Percentage of Matches Won Minus Matches Lost After Winning the Toss by Difference in Ranks}
-\includegraphics[width=1\textwidth]{../figs/winbyRank.pdf}
+\includegraphics[width=1\textwidth]{winbyRank.pdf}
 {\footnotesize Note: Smoothed relationship between difference in ranks and winning probability by whether or not the team won the toss.\par}
 \label{fig:ranks}
 \end{figure}
@@ -149,7 +149,7 @@ Lastly, we investigate how the advantage varies by country winning the toss in i
 \begin{figure}[htbp]
 \centering
 \caption{Difference in Winning Percentages of Teams that Won the Toss and Teams that Lost the Toss by Country}
-\includegraphics[scale=1]{../figs/winbyCountry.pdf}
+\includegraphics[scale=1]{winbyCountry.pdf}
 {\footnotesize \\ Note: Means and 95\% confidence intervals. \emph{n} refers to the number of matches.\par}
 \label{fig:country}
 \end{figure}
