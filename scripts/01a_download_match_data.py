@@ -1,8 +1,9 @@
 '''
 Download Cricket Data
-Last Edited: 05.27.15
+Last Edited: 06.14.2020
 
 @author: Gaurav Sood
+@author: Derek Willis
 
 '''
 
@@ -11,33 +12,34 @@ Last Edited: 05.27.15
 
 import requests
 import math
-import csv
-import sys
 import time
-import os
-import simplejson
-import unicodedata
-from BeautifulSoup import BeautifulSoup, SoupStrainer
+import json
+from bs4 import BeautifulSoup, UnicodeDammit
 
-for match_type in ['list%20a', 'first%20class', 'odi', 'test', 't20i', 't20']: 
+for match_type in ['list', 'first', 'odi', 'test', 't20i', 't20']:
     results = []
     r = requests.get('http://search.espncricinfo.com/ci/content/match/search.html?all=1;page=0;search=' + match_type)
-    soup = BeautifulSoup(r.text)
-    last_match = int(soup.findAll('span', attrs={'class':'PaginationNmbrs'})[-1].text)
+    soup = BeautifulSoup(r.text, "html.parser")
+    last_match = int(soup.find_all('span', attrs={'class':'PaginationNmbrs'})[-1].text)
     last_page = int(math.ceil(float(last_match)/float(20)))
     for i in range(0, last_page):
         time.sleep(1)
         results_page = requests.get("http://search.espncricinfo.com/ci/content/match/search.html?search={0};all=1;page={1}".format(match_type, i))
-        soupy = BeautifulSoup(results_page.text)
-        for new_host in soupy.findAll('a', {'class' : 'srchPlyrNmTxt'}):
+        soupy = BeautifulSoup(results_page.text, "html.parser")
+        for new_host in soupy.find_all('a', {'class' : 'srchPlyrNmTxt'}):
             try:
-                new_host = new_host['href']
+                new_host = UnicodeDammit(new_host['href']).unicode_markup
             except:
                 continue
-            new_host = unicodedata.normalize('NFKD', new_host).encode('ascii','ignore')
-            #print(type(str.split(new_host)[3]))
-            print str.split(new_host, "/")[4].split('.')[0]
-            results.append(str.split(new_host, "/")[4].split('.')[0])
+            print(new_host.split("/")[4].split('.')[0])
+            results.append(new_host.split("/")[4].split('.')[0])
 
-    with open("matches-{0}.json".format(match_type), "wb") as f:
-        simplejson.dump(results, f)
+    if match_type == 'list':
+        file_name = 'list-a'
+    elif match_type == 'first':
+        file_name = 'first-class'
+    else:
+        file_name = match_type
+
+    with open("matches-{0}.json".format(file_name), "w") as f:
+        json.dump(results, f)
