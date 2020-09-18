@@ -1,0 +1,171 @@
+---
+title: "Cricket Results"
+author:  'Apoorva Lal'
+documentclass: amsart
+amsart: true
+# thanks: "Acknowledgements: I'd like to thank my mum and dad"
+date: \today
+# abstract: '\lipsum[4]'
+output:
+  html_document
+  # pdf_document:
+  #   keep_tex: true
+  #   fig_width: 7
+  #   fig_height: 6
+  #   fig_caption: true
+  #   df_print: kable
+  #   dev: cairo_pdf
+  #   latex_engine: xelatex
+  #   template: /home/alal/Templates/boilerplate/lal-mdpdf.latex
+fontsize: 12pt
+colorlinks: true
+indent: true
+xetex: true
+mainfont: TeX Gyre Pagella
+monofont: Iosevka
+mathspec: true
+geometry: margin=2cm
+# embed links in citations
+link-citations: true
+numbersections: true
+# separate title page
+septitle: true
+# spacing
+linestretch: 2
+backend: biber
+bibliography: /home/alal/Dropbox/MyLibrary2.bib
+csl: econometrica.csl
+header-includes:
+  - \usepackage{lipsum}
+---
+
+```{r, echo=FALSE, include=FALSE}
+# %% ####################################################
+rm(list = ls())
+library(LalRUtils)
+LalRUtils::libreq(tidyverse, data.table, stargazer2, lfe,
+  rio, foreach, magrittr, janitor, knitr, rmarkdown)
+theme_set(lal_plot_theme())
+options(repr.plot.width=12, repr.plot.height=9)
+set.seed(42)
+# %% ####################################################
+opts_chunk$set(echo=FALSE, autodep=TRUE, cache.comments=FALSE, cache = TRUE,
+               message=FALSE, warning=FALSE)
+outf = 'html'
+```
+
+```{r}
+# %% long data
+root = '/home/alal/Dropbox/1_Research/cricket/'
+datadir = file.path(root, "repos/cricket-stats/data")
+crickett = fread(file.path(root, "tmp/matches_long.csv"))
+setorder(crickett, -year, -month, -date, mid)
+```
+
+```{r, echo=F, include = F}
+# check that match id is unique
+crickett[, .N, mid][order(-N)][1]
+# %% # ## Subsample (for now)
+crickett$type_of_match %>% tabyl
+regsamp = crickett[type_of_match  %in%
+  c("ODI", "T20", "T20I", "Twenty20", "TEST", "FC", "LISTA")]
+# %% throw out matches with no results / cancelled / walkover
+regsamp[outcome %like% 'abandoned' | outcome %like% 'cancelled', .N]
+regsamp = regsamp[!(outcome %like% 'abandoned' | outcome %like% 'cancelled')]
+
+regsamp[outcome %like% 'walkover' , .N]
+regsamp = regsamp[!(outcome %like% 'walkover')]
+
+# %% bat first checks
+regsamp$bat_first %>% tabyl
+# win toss checks
+regsamp$wintoss %>% tabyl
+
+# %% final batting order checks
+regsamp[, bat_first_min := min(bat_first), by = mid]
+regsamp$bat_first_min %>% tabyl
+# these have no toss info
+regsamp[bat_first_min == 1,
+  .(mid, outcome, wintoss, wingame, bat_first, bat_first_min)]
+# drop them
+regsamp = regsamp[!(bat_first_min == 1)]
+
+# %% check coding of draws
+regsamp %>% glimpse
+regsamp[, .N, wingame]
+
+# %%
+# some matches record ties differently
+regsamp[, res_match_exists := max(wingame), mid] # matches for which at least one team is recorded to have won
+regsamp[, table(res_match_exists)]
+regsamp[res_match_exists == 0.5, table(type_of_match)]
+
+
+# %%
+regsamp[res_match_exists == 0, .N, type_of_match]
+regsamp[res_match_exists == 0, .(outcome)] %>% head
+
+# %% recode them to draw for now - check w others later
+regsamp[res_match_exists == 0, wingame := 0.5]
+```
+
+# Empirics
+
+## Data Sanitation Checks
+
+```{r}
+# %% sanity checks
+regsamp[, .N, bat_first]
+regsamp[, .N, wingame]
+regsamp[, .N, wintoss]
+# %% overall
+# everything
+ols          = robustify(felm(wingame ~ bat_first | 0 | 0 | mid , regsamp))
+# matches where toss-winner chose to bat first
+ols0         = robustify(felm(wingame ~ bat_first | 0 | 0 | mid , regsamp[bat_or_bowl == 1]))
+# matches where toss-winner chose to field first
+ols1         = robustify(felm(wingame ~ bat_first | 0 | 0 | mid , regsamp[bat_or_bowl == 2]))
+first_stage  = robustify(felm(bat_first ~ wintoss | 0 | 0 | mid , regsamp))
+reduced_form = robustify(felm(wingame ~ wintoss | 0 | 0 | mid , regsamp))
+iv_est       = robustify(felm(wingame ~ 1 | 0 | (bat_first ~ wintoss) | mid , regsamp))
+iv_est_2     = robustify(felm(wingame ~ 1 | name + type_of_match | (bat_first ~ wintoss) | mid, regsamp))
+# %%
+```
+
+# Regressions
+
+\bland
+```{r, results='asis'}
+stargazer(ols, ols0, ols1,
+          first_stage, reduced_form, iv_est, iv_est_2,
+  add.lines = list(c("note", "All", "TW bats", "TW fields", "first-stage",
+                     "reduced form", "IV", "IV + team + match type FE")),
+  type = outf)
+```
+\eland
+
+```{r}
+reg_by_group = function(df, groupvar, fml){
+  require(dplyr) ; require(purrr) ; require(broom)
+  group_reg_tables = df %>%
+    group_by({{groupvar}}) %>%
+    group_map( ~ robustify(felm(fml, .x)) %>%
+      tidy %>% mutate(group = .y[[1]]), .keep = T)
+  return(group_reg_tables)
+}
+```
+## reduced form by match type
+```{r}
+reg_by_group(regsamp, type_of_match, formula_lfe('wingame', 'wintoss', C = "mid"))
+```
+
+## first stage by match type
+
+```{r}
+reg_by_group(regsamp, type_of_match, formula_lfe('bat_first', 'wintoss', C = "mid"))
+```
+
+## IV by match type
+```{r}
+reg_by_group(regsamp, type_of_match, as.formula("wingame ~ 1 | 0 | (bat_first ~ wintoss)"))
+```
