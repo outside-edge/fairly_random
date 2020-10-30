@@ -1,13 +1,21 @@
 ---
 title: "Cricket Results"
-author:  'Apoorva Lal'
-documentclass: amsart
-amsart: true
-# thanks: "Acknowledgements: I'd like to thank my mum and dad"
 date: \today
+# author:  'Apoorva Lal'
+# documentclass: amsart
+# amsart: true
+# thanks: "Acknowledgements: I'd like to thank my mum and dad"
 # abstract: '\lipsum[4]'
 output:
-  html_document
+  html_document:
+    theme: flatly
+    highlight: tango
+    code_folding: hide
+    toc: true
+    toc_float: false
+    toc_depth: 3
+    fig_width:  10
+    fig_height: 8
   # pdf_document:
   #   keep_tex: true
   #   fig_width: 7
@@ -17,42 +25,141 @@ output:
   #   dev: cairo_pdf
   #   latex_engine: xelatex
   #   template: /home/alal/Templates/boilerplate/lal-mdpdf.latex
-fontsize: 12pt
-colorlinks: true
-indent: true
-xetex: true
-mainfont: TeX Gyre Pagella
-monofont: Iosevka
-mathspec: true
-geometry: margin=2cm
+# fontsize: 12pt
+# colorlinks: true
+# indent: true
+# xetex: true
+# mainfont: TeX Gyre Pagella
+# monofont: Iosevka
+# mathspec: true
+# geometry: margin=2cm
 # embed links in citations
-link-citations: true
-numbersections: true
+# link-citations: true
+# numbersections: true
 # separate title page
-septitle: true
+# septitle: true
 # spacing
-linestretch: 2
-backend: biber
-bibliography: /home/alal/Dropbox/MyLibrary2.bib
-csl: econometrica.csl
-header-includes:
-  - \usepackage{lipsum}
+# linestretch: 2
+# backend: biber
+# bibliography: /home/alal/Dropbox/MyLibrary2.bib
+# csl: econometrica.csl
+# header-includes:
+#   - \usepackage{lipsum}
 ---
 
 ```{r, echo=FALSE, include=FALSE}
 # %% ####################################################
 rm(list = ls())
 library(LalRUtils)
-LalRUtils::libreq(tidyverse, data.table, stargazer2, lfe,
+LalRUtils::libreq(tidyverse, data.table, stargazer2,
+  lfe, ivmodel,
   rio, foreach, magrittr, janitor, knitr, rmarkdown)
 theme_set(lal_plot_theme())
 options(repr.plot.width=12, repr.plot.height=9)
 set.seed(42)
 # %% ####################################################
-opts_chunk$set(echo=FALSE, autodep=TRUE, cache.comments=FALSE, cache = TRUE,
+opts_chunk$set(echo=TRUE, autodep=TRUE, cache.comments=FALSE, cache = TRUE,
                message=FALSE, warning=FALSE)
 outf = 'html'
 ```
+
+<!--
++ kappa weights
++ subgroup level hetereogeneous treatment effects
++ wicket to run ratio
+ -->
+
+# Outline
+
+```
+# Introduction
+
+# Data
+
+# Empirical Specification
++ Instrument estimates the effect of being able to harness the full
+  set of information relevant to winning
+
+# Results
+## Baseline Treatment Effects
+## Heterogeneous Treatment Effects
+
++ grounds
++ day/night
++ condition on history
+
+## Robustness
+
+# Policy Implications
+
+# Conclusion
+```
+
+
+# Introduction
+
++ one of the most popular sports in the world
++ unlike other similarly popular sports, it has evolved with new rules
+  and formats
+  * soccer has remained a 90 minute match in record history, while
+    cricket matches can last from anywhere between 3 hours to 5 days
++ common feature of all formats is that there is a team that bats
+  first, while the other team fields and bowls
+  * in the longer versions of the game, both teams are alloted two
+    innings each, while in shorter versions each team bats for an
+    innings
+
+ + innings produce an inherent asymmetry of the game because
+  * weather conditions may be more conducive to batting
+    earlier in the day
+  * psychological effects of chasing targets vs being first-mover
++ this asymmetry is mitigated by having a coin toss, in which the team
+  that wins the toss gets to choose whether they bat or field first
+  * therefore winning the toss can have a profound impact on the odds
+    of winning or losing the game that gives one team an advantage in
+    win probability against the other team even before a single ball
+    is bowled
++ normative question: are these asymmetries created by the toss an
+  inherent part of the game that we all accept, or do they detract
+  from the integrity and fairness of the game,
+  + some people might say that since the toss is random, the
+    unfairness is not objectionable, since teams eventually
+  + however, some matches (such as knock-out matches in world cups)
+    are of such consequences that their outcome ought to depend on the
+    skill, stamina, training, decisionmaking, and coaching and
+    leadership of captain etc rather than the outcome of a random
+    event that occurs before a single ball is bowled, before a single
+    ball is bowled, so the argument goes
+
++ In this paper, we investigate the impacts of these asymmetries on
+  match outcomes  using an original dataset of 60,000 cricket matches
+  played over the course of the last century. This is the most
+  comprehensive cricket match dataset to our knowledge
+
++ Our analysis proceeds in the following series of steps
+  * is the toss random?
+  * what is the effect of winning the toss on winning the game?
+    - 2%
+    - team strength
+    - is it higher for more competitive games?
+    - match types
+    - how does this vary by the competing teams' characteristics
+    - stakes of the tournament
+  * since the toss endows one of the captains with the choice of
+    batting first or second, how do captains use the toss to their
+    advantage
+  * in other words, what is the effect of having the choice to bat
+    first and choosing to do so?
+    - hetergeneous effects
+    - IV
+    - Kappa
++ can we do this in terms of runs? this is the policy relevant
+  quantity
+
+
+# Data
+
+## Data Sanity Checks
 
 ```{r}
 # %% long data
@@ -65,22 +172,27 @@ setorder(crickett, -year, -month, -date, mid)
 ```{r, echo=F, include = F}
 # check that match id is unique
 crickett[, .N, mid][order(-N)][1]
+# dedupe
 # %% # ## Subsample (for now)
 crickett$type_of_match %>% tabyl
 regsamp = crickett[type_of_match  %in%
-  c("ODI", "T20", "T20I", "Twenty20", "TEST", "FC", "LISTA")]
+  c("ODI", "T20", "T20I", "Twenty20", "TEST", "FC", "LISTA", "Women's T20")]
 # %% throw out matches with no results / cancelled / walkover
 regsamp[outcome %like% 'abandoned' | outcome %like% 'cancelled', .N]
 regsamp = regsamp[!(outcome %like% 'abandoned' | outcome %like% 'cancelled')]
-
 regsamp[outcome %like% 'walkover' , .N]
 regsamp = regsamp[!(outcome %like% 'walkover')]
-
-# %% bat first checks
+# fix bat first and toss indicators
+########     ###    ########  #######  ########  ########  ######## ########
+##     ##   ## ##      ##    ##     ## ##     ## ##     ## ##       ##     ##
+##     ##  ##   ##     ##    ##     ## ##     ## ##     ## ##       ##     ##
+########  ##     ##    ##    ##     ## ########  ##     ## ######   ########
+##     ## #########    ##    ##     ## ##   ##   ##     ## ##       ##   ##
+##     ## ##     ##    ##    ##     ## ##    ##  ##     ## ##       ##    ##
+########  ##     ##    ##     #######  ##     ## ########  ######## ##     ##
 regsamp$bat_first %>% tabyl
 # win toss checks
 regsamp$wintoss %>% tabyl
-
 # %% final batting order checks
 regsamp[, bat_first_min := min(bat_first), by = mid]
 regsamp$bat_first_min %>% tabyl
@@ -91,55 +203,92 @@ regsamp[bat_first_min == 1,
 regsamp = regsamp[!(bat_first_min == 1)]
 
 # %% check coding of draws
-regsamp %>% glimpse
 regsamp[, .N, wingame]
 
 # %%
 # some matches record ties differently
 regsamp[, res_match_exists := max(wingame), mid] # matches for which at least one team is recorded to have won
 regsamp[, table(res_match_exists)]
+# draws for test and FC matches
 regsamp[res_match_exists == 0.5, table(type_of_match)]
-
-
 # %%
 regsamp[res_match_exists == 0, .N, type_of_match]
 regsamp[res_match_exists == 0, .(outcome)] %>% head
-
 # %% recode them to draw for now - check w others later
 regsamp[res_match_exists == 0, wingame := 0.5]
+
+# %% finally, consolidate match type before FEs and subgroup analyses
+regsamp[, .N, type_of_match]
+
+regsamp[, type_of_match2 := case_when(
+  type_of_match == "ODI"          ~ "OD",
+  type_of_match == "T20I"         ~ "T20",
+  type_of_match == "Women\'s T20" ~ "T20",
+  TRUE ~ type_of_match)]
+
+regsamp %>% tabyl(type_of_match2)
+
+
+# %% time indicators
+regsamp[, time_unit  := cut(year,
+  breaks = c(-Inf, 1850, 1900, 1950, 1980, 1990, 2000, 2010, 2020),
+  labels = c("<=1850", "1851-1900", "1901-1950", "1951-1980" ,"1981-1990",
+             "1991-2000", "2001-2010", "2011-2020"))]
+# regsamp[, tabyl(year), by = time_unit]
+
+# %% sanity checks - these should be perfectly balanced
+regsamp[, .N, bat_first]
+regsamp[, .N, wingame]
+regsamp[, .N, wintoss]
+
 ```
 
 # Empirics
 
-## Data Sanitation Checks
+## Pooled Estimates
 
 ```{r}
-# %% sanity checks
-regsamp[, .N, bat_first]
-regsamp[, .N, wingame]
-regsamp[, .N, wintoss]
 # %% overall
-# everything
-ols          = robustify(felm(wingame ~ bat_first | 0 | 0 | mid , regsamp))
+ols          = felm(wingame ~ bat_first | 0 | 0 | mid , regsamp)
 # matches where toss-winner chose to bat first
-ols0         = robustify(felm(wingame ~ bat_first | 0 | 0 | mid , regsamp[bat_or_bowl == 1]))
+ols0         = felm(wingame ~ bat_first | 0 | 0 | mid , regsamp[bat_or_bowl == 1])
 # matches where toss-winner chose to field first
-ols1         = robustify(felm(wingame ~ bat_first | 0 | 0 | mid , regsamp[bat_or_bowl == 2]))
-first_stage  = robustify(felm(bat_first ~ wintoss | 0 | 0 | mid , regsamp))
-reduced_form = robustify(felm(wingame ~ wintoss | 0 | 0 | mid , regsamp))
-iv_est       = robustify(felm(wingame ~ 1 | 0 | (bat_first ~ wintoss) | mid , regsamp))
-iv_est_2     = robustify(felm(wingame ~ 1 | name + type_of_match | (bat_first ~ wintoss) | mid, regsamp))
+ols1         = felm(wingame ~ bat_first | 0 | 0 | mid , regsamp[bat_or_bowl == 2])
+first_stage  = felm(bat_first ~ wintoss | 0 | 0 | mid , regsamp)
+reduced_form = felm(wingame ~ wintoss | 0 | 0 | mid , regsamp)
+iv_est       = felm(wingame ~ 1 | 0 | (bat_first ~ wintoss) | mid , regsamp)
+iv_est_2     = felm(wingame ~ 1 |
+                    as.factor(name) + as.factor(type_of_match2) | (bat_first ~ wintoss) | mid, regsamp)
+iv_est_3     = felm(wingame ~ 1 |
+                    as.factor(name) + as.factor(type_of_match2) + as.factor(time_unit) |
+                    (bat_first ~ wintoss) | mid, regsamp)
 # %%
 ```
 
-# Regressions
 
 \bland
 ```{r, results='asis'}
-stargazer(ols, ols0, ols1,
-          first_stage, reduced_form, iv_est, iv_est_2,
-  add.lines = list(c("note", "All", "TW bats", "TW fields", "first-stage",
-                     "reduced form", "IV", "IV + team + match type FE")),
+reglabs = c("Bat First", "Win Toss", "Bat First (IV)")
+marker = function (name, yesno){
+        return(c(name, map_chr(yesno, function(x) ifelse(x, "✓", ""))))
+}
+
+fstatrow = function(m) round(m$stage1$iv1fstat[[1]][['F']], 2)
+
+stargazer(ols, ols0, ols1, first_stage, reduced_form,
+          iv_est, iv_est_2, iv_est_3,
+  add.lines = list(c("Sample",
+                    "All", "TW bats", "TW fields", "All", "All", "All", "All", "All"),
+                  c("FS F-Stat", "", "", "", "", "",
+                      fstatrow(iv_est), fstatrow(iv_est_2), fstatrow(iv_est_3)),
+                  marker('Team FE',       c(F, F, F, F, F, F, T, T)),
+                  marker('Match-Type FE', c(F, F, F, F, F, F, T, T)),
+                  marker('Decade FE',     c(F, F, F, F, F, F, F, T))) ,
+  keep.stat = c('N'),
+  covariate.labels = reglabs,
+  dep.var.labels.include = FALSE,
+  column.labels   = c("OLS", "RF", "FS", "IV"),
+    column.separate = c(3, 1, 1, 3),
   type = outf)
 ```
 \eland
@@ -153,19 +302,166 @@ reg_by_group = function(df, groupvar, fml){
       tidy %>% mutate(group = .y[[1]]), .keep = T)
   return(group_reg_tables)
 }
-```
-## reduced form by match type
-```{r}
-reg_by_group(regsamp, type_of_match, formula_lfe('wingame', 'wintoss', C = "mid"))
+
+coefplotter = function(df, title){
+  df %>%
+    mutate(term2 = paste0(group, '_', term)) %>%
+    ggplot(. , aes(y = group, x = estimate) ) +
+      geom_point(colour = '#6495ed') +
+      geom_pointrange(aes(
+        xmin = estimate - 1.96 * `std.error`,
+        xmax = estimate + 1.96 * `std.error`,
+      ), colour = "#6495ed", alpha = 0.8) +
+    labs(title = title, x = "", y = "") +
+    geom_vline(xintercept = 0, linetype = 'dotted')
+}
 ```
 
-## first stage by match type
+## Subgroup Analysis
+
+### Reduced form Effects
 
 ```{r}
-reg_by_group(regsamp, type_of_match, formula_lfe('bat_first', 'wintoss', C = "mid"))
+reg_by_group(regsamp, type_of_match2,
+    formula_lfe('wingame', 'wintoss', C = "mid")) %>% rbindlist %>%
+  .[term == 'wintoss'] %>%
+  coefplotter(., "Reduced Form : Effect of Toss on Win Probability")
+
+reg_by_group(regsamp, di_type_of_match,
+    formula_lfe('wingame', 'wintoss', C = "mid")) %>% rbindlist %>%
+  .[term == "wintoss"] %>%
+  coefplotter(., "Reduced Form - by Intl Category")
+
+reg_by_group(regsamp, time_unit,
+    formula_lfe('wingame', 'wintoss', C = "mid")) %>% rbindlist %>%
+  .[term == "wintoss"] %>%
+  coefplotter(., "Reduced Form - over Time") + coord_flip()
+
+
+reg_by_group(regsamp, continent,
+    formula_lfe('wingame', 'wintoss', C = "mid")) %>% rbindlist %>%
+  .[term == "wintoss"] %>%
+  coefplotter(., "Reduced Form - by Continent")
 ```
 
-## IV by match type
+### First stage by match type
+
 ```{r}
-reg_by_group(regsamp, type_of_match, as.formula("wingame ~ 1 | 0 | (bat_first ~ wintoss)"))
+fs_by_group = reg_by_group(regsamp, type_of_match2,
+    formula_lfe('bat_first', 'wintoss', C = "mid")) %>% rbindlist
+coefplotter(fs_by_group[term == "wintoss"], "First Stage - Effect of Toss on Choice to bat first")
+```
+
+### IV by match type
+
+```{r}
+# est = felm(wingame ~ 1 | 0 | (bat_first ~ wintoss) | mid , regsamp[type_of_match2 == "LISTA"])
+# est
+reg_by_group(regsamp, type_of_match2,
+      as.formula("wingame ~ 1 | 0 | (bat_first ~ wintoss)| mid")) %>% rbindlist %>%
+  .[term == "`bat_first(fit)`"] %>%
+  coefplotter(., "IV Estimate - Effect of Batting First on Win Probability")
+
+reg_by_group(regsamp, di_type_of_match,
+    as.formula('wingame ~ 1 | 0 | (bat_first ~ wintoss) | mid')) %>% rbindlist %>%
+  .[term == "`bat_first(fit)`"] %>%
+  coefplotter(., "IV Estimate - by Intl Category")
+
+reg_by_group(regsamp, time_unit,
+    as.formula('wingame ~ 1 | 0 | (bat_first ~ wintoss) | mid')) %>% rbindlist %>%
+  .[term == "`bat_first(fit)`"] %>%
+  coefplotter(., "IV Estimate - over Time") + coord_flip()
+
+
+reg_by_group(regsamp, continent,
+    as.formula('wingame ~ 1 | 0 | (bat_first ~ wintoss) | mid')) %>% rbindlist %>%
+  .[term == "`bat_first(fit)`"] %>%
+  coefplotter(., "IV Estimate - by Continent")
+
+```
+
+## Characterising Compliers
+
+$$
+P(D_1 > D_0) = E[D_1 - D_0] = E[D | Z = 1] - E[D | Z = 0]
+$$
+
+```{r}
+mu = regsamp[, mean(bat_first), wintoss][, V1]
+always_takers = nrow(regsamp[wintoss != 1 & bat_first == 1]) / nrow(regsamp[wintoss != 1])
+never_takers =  nrow(regsamp[wintoss == 1 & bat_first == 0]) / nrow(regsamp[wintoss == 1])
+compliers = mu[2] - mu[1]
+
+
+shares = data.frame(subpop = c('always takers', 'never takers', 'compliers'),
+           share  = c(always_takers, never_takers, compliers[1]))
+shares %>% kable()
+```
+
+
+## $\kappa$ weighted summary statistics
+
+
+The relative likelihood that a complier has $X = x$ is given by the ratio of the
+first stage for the subpopulation with $X = x$ to the overall first stage.
+
+Target: mean for compliers
+
+$$
+E[X | D_1 > D_0] = \frac{E[\kappa X]}{E[\kappa]}
+$$
+
+where
+
+$$
+\kappa = 1 - \frac{D (1-Z)}{P(Z = 0 | X)} - \frac{(1-D) Z}{P(Z = 1 | X)}
+$$
+
++ $\approx$ 1 for identifiable compliers
++ $\approx$ -1 for identifiable always takers
++ $\approx$ -1 for identifiable never takers
+
+```{r}
+samp2 = regsamp[!is.na(rank) & !is.na(home_country)]
+samp2[, lowrank := min(rank) , by = mid]
+samp2[, underdog := ifelse(rank == lowrank, 1, 0)]
+samp2[, dn := 1*(day_n_night == "day/night match")]
+samp2[, home := 1*home_country]
+
+kappa_avg = function(xn, df = samp2) {
+  x = as.matrix(df[, ..xn]); y = as.matrix(df$wingame)
+  d = df$bat_first; z = df$wintoss
+  ϕ = glm(z ~ x, family = binomial())$fitted.values
+  κ = 1 - (d * (1-z))/(1-ϕ) - ((1-d) * z)/ϕ
+  mean(κ * x) / mean(κ)
+}
+
+
+glue::glue("underdog share among compliers = {kappa_avg('underdog')}")
+glue::glue("dn share among compliers = {kappa_avg('dn')}")
+glue::glue("home share among compliers = {kappa_avg('home')}")
+```
+
+
+## Local Average Response Function
+
+CEF of $Y|X,D$ *for subpopulation of compliers*.
+
+Target : $E[Y | X, D, D_1 > D_0]$.
+
+Estimate using Kappa weighting.
+
+```{r}
+
+larf_fit = function(xn, df = samp2) {
+  X = as.matrix(df[, ..xn]); y = as.matrix(df$wingame)
+  d = df$bat_first; z = df$wintoss
+  ϕ = glm(z ~ X, family = binomial())$fitted.values
+  κ = 1 - (d * (1-z))/(1-ϕ) - ((1-d) * z)/ϕ
+  Xw = cbind(1, X, d)
+  larf <- solve(t(Xw) %*% diag(κ) %*% Xw ) %*% t(Xw) %*% diag(κ) %*% y
+  return(larf)
+}
+
+larf_fit(c('underdog', 'dn', 'home'))
 ```
