@@ -12,10 +12,11 @@ output:
     highlight: tango
     code_folding: hide
     toc: true
-    toc_float: false
+    toc_float: true
     toc_depth: 3
     fig_width:  10
     fig_height: 8
+    self_contained: true
   # pdf_document:
   #   keep_tex: true
   #   fig_width: 7
@@ -52,7 +53,7 @@ output:
 rm(list = ls())
 library(LalRUtils)
 LalRUtils::libreq(tidyverse, data.table, stargazer2,
-  lfe, ivmodel,
+  lfe, ivmodel, fastDummies, patchwork,
   rio, foreach, magrittr, janitor, knitr, rmarkdown)
 theme_set(lal_plot_theme())
 options(repr.plot.width=12, repr.plot.height=9)
@@ -335,24 +336,56 @@ reg_by_group(regsamp, di_type_of_match,
 reg_by_group(regsamp, time_unit,
     formula_lfe('wingame', 'wintoss', C = "mid")) %>% rbindlist %>%
   .[term == "wintoss"] %>%
-  coefplotter(., "Reduced Form - over Time") + coord_flip()
+  coefplotter(., "Reduced Form - over time") + coord_flip()
 
 
 reg_by_group(regsamp, continent,
     formula_lfe('wingame', 'wintoss', C = "mid")) %>% rbindlist %>%
   .[term == "wintoss"] %>%
-  coefplotter(., "Reduced Form - by Continent")
+  coefplotter(., "Reduced Form - by continent")
+
+regsamp[, dn := 1*(day_n_night == "day/night match")]
+
+regsamp[type_of_match == "ODI"]  %>%
+  reg_by_group(., dn,
+    formula_lfe('wingame', 'wintoss', C = "mid")) %>% rbindlist %>%
+  .[term == "wintoss"] %>%
+  coefplotter(., "Reduced Form - by Day-Night")
+
 ```
 
-### First stage by match type
+### First stage
+
++ History of team + ranking
++ Micro-seasonality
++ Team-FEs
 
 ```{r}
-fs_by_group = reg_by_group(regsamp, type_of_match2,
-    formula_lfe('bat_first', 'wintoss', C = "mid")) %>% rbindlist
-coefplotter(fs_by_group[term == "wintoss"], "First Stage - Effect of Toss on Choice to bat first")
+reg_by_group(regsamp, type_of_match2,
+    formula_lfe('bat_first', 'wintoss', C = "mid")) %>% rbindlist %>%
+  .[term == "wintoss"] %>%
+  coefplotter(., "First Stage - Effect of Toss on Choice to bat first")
+
+reg_by_group(regsamp, di_type_of_match,
+    formula_lfe('bat_first', 'wintoss', C = "mid")) %>% rbindlist %>%
+  .[term == "wintoss"] %>%
+  coefplotter(., "First Stage - by intl type")
+
+reg_by_group(regsamp, time_unit,
+    formula_lfe('bat_first', 'wintoss', C = "mid")) %>% rbindlist %>%
+  .[term == "wintoss"] %>%
+  coefplotter(., "First Stage - over time") + coord_flip()
+
+reg_by_group(regsamp, continent,
+    formula_lfe('bat_first', 'wintoss', C = "mid")) %>% rbindlist %>%
+  .[term == "wintoss"] %>%
+  coefplotter(., "First Stage - by Continent")
 ```
 
 ### IV by match type
+
+
++ History of team
 
 ```{r}
 # est = felm(wingame ~ 1 | 0 | (bat_first ~ wintoss) | mid , regsamp[type_of_match2 == "LISTA"])
@@ -421,12 +454,21 @@ $$
 + $\approx$ -1 for identifiable always takers
 + $\approx$ -1 for identifiable never takers
 
+Covars considered:
+
++ underdog - lower ranked team in match
++ day-night matches
++ home team
+
 ```{r}
 samp2 = regsamp[!is.na(rank) & !is.na(home_country)]
 samp2[, lowrank := min(rank) , by = mid]
 samp2[, underdog := ifelse(rank == lowrank, 1, 0)]
 samp2[, dn := 1*(day_n_night == "day/night match")]
 samp2[, home := 1*home_country]
+samp2 = dummy_cols(samp2, select_columns = c('time_unit', 'continent')) %>%
+  clean_names()
+
 
 kappa_avg = function(xn, df = samp2) {
   x = as.matrix(df[, ..xn]); y = as.matrix(df$wingame)
@@ -436,10 +478,18 @@ kappa_avg = function(xn, df = samp2) {
   mean(κ * x) / mean(κ)
 }
 
+samp2 %>% glimpse
 
-glue::glue("underdog share among compliers = {kappa_avg('underdog')}")
-glue::glue("dn share among compliers = {kappa_avg('dn')}")
-glue::glue("home share among compliers = {kappa_avg('home')}")
+
+glue::glue("underdog share among compliers = {round(kappa_avg('underdog'), 3)}")
+glue::glue("day-night share among compliers = {round(kappa_avg('dn'), 3)}")
+glue::glue("home share among compliers = {round(kappa_avg('home'), 3)}")
+glue::glue("DL among compliers = {round(kappa_avg('duckworth_lewis'), 3)}")
+
+times = colnames(samp2) %>% str_subset("time_unit_")
+time_kappa = times %>% map_dbl(kappa_avg)
+cbind(times, time_kappa)
+
 ```
 
 
@@ -464,4 +514,52 @@ larf_fit = function(xn, df = samp2) {
 }
 
 larf_fit(c('underdog', 'dn', 'home'))
+```
+
+# Run Curves
+
+```{r}
+library(patchwork)
+df  = import(file.path(root, "tmp/overs_odi/overs/overs_1000891.json")) %>% setDT
+df1 = import(file.path(root, "tmp/overs_odi/overs/overs_1000893.json")) %>% setDT
+# %%
+cum_run_curves = function(df){
+  subt = paste(unique(df$teamShortName) , collapse = ' vs ')
+  df[, remaining_wickets := 11 - totalWicket]
+  # max run tallies
+  totruns = df[, max(totalRuns), by = 'innings']
+  # figure
+  f = ggplot(df, aes(over, totalRuns, colour = as.factor(innings))) +
+    geom_point(aes(alpha = remaining_wickets)) +
+    geom_hline(yintercept = totruns[1, 2][[1]], colour = 'red', alpha = 0.5, linetype = 'dashed') +
+    geom_hline(yintercept = totruns[2, 2][[1]], colour = 'blue' , alpha = 0.5, linetype = 'dashed') +
+    geom_vline(xintercept = 50, alpha = 0.5, linetype = 'dotted') +
+    scale_colour_brewer(palette = "Set1") +
+    labs(subtitle = subt, caption = 'alpha scaled by number of wickets left',
+      colour = 'Innings') + scale_alpha(guide = 'none')
+  return(f)
+}
+
+p1 = cum_run_curves(df1) + ggtitle('Failed Chase')
+p2 = cum_run_curves(df) + ggtitle('Successful Chase')
+
+# %%
+p = p1 / p2
+p
+```
+
+```{r}
+matchdata = fread(file.path(root, 'repos/cricket-stats/data/final_output.csv'))
+ODIs = matchdata[type_of_match == "ODI"]
+dl_matches = ODIs[duckworth_lewis == 1]
+dl_ids = dl_matches[, match_id]
+dl_id = dl_ids[[50]]
+dl_matches[match_id == dl_id, outcome]
+
+# %%
+match = import(file.path(root, glue::glue("tmp/overs_odi/overs/overs_{dl_id}.json"))) %>% setDT
+
+match %>% glimpse
+
+cum_run_curves(match)
 ```
