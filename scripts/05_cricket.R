@@ -1,15 +1,15 @@
 "
 @description:
 1. Analyses
-2. Graphs 
+2. Graphs
 
-@authors: 
+@authors:
 Gaurav Sood and Derek Willis
 
 "
 
 # setwd
-setwd(paste0(githubdir, "cricket-stats"))
+# setwd(paste0(githubdir, "cricket-stats"))
 
 # Source merge script
 source("scripts/04_merge_ranking_grounds_data.R")
@@ -20,6 +20,7 @@ library(stringi)
 library(xtable)
 library(tidyr)
 
+# %%
 "
 Notes About the Data:
 
@@ -33,7 +34,7 @@ sum(match$team2=='')
 
 "
 Take out matches where decision on who bowled/batted first is unknown. See this, for e.g.:
-http://www.espncricinfo.com/matches/engine/match/537589.html 
+http://www.espncricinfo.com/matches/engine/match/537589.html
 
 Takes out abandoned matches
 # abandoned
@@ -54,7 +55,7 @@ http://www.espncricinfo.com/matches/engine/match/329869.html
 temp <- grepl('No result', cricket$outcome)
 cricket <- subset(cricket, !temp)
 
-# ---------------- 
+# ----------------
 
 # Prop. who win toss, win game. (not including draws)
 table(cricket$win_toss_win_game, cricket$basic_type_of_match)
@@ -64,18 +65,18 @@ Melt the data
 Two rows per match
 "
 
-# Match level vars: 
-match_cols <- c("url", "match_id", "uniqueid", "date", "month", "day", "year", "rain",  "diff_ranks", "bat_or_bowl", 
-                 "type_of_match", "basic_type_of_match", "type_of_match2", "di_type_of_match", "men_type_of_match", "day_n_night", "youth", "women", "youth.women", "unofficial", "duckworth_lewis", 
-                 "win_toss", "win_game", "home_wins_toss", "draw", "outcome", "wickets", "runs", "balls", "innings", 
+# Match level vars:
+match_cols <- c("url", "match_id", "uniqueid", "date", "month", "day", "year", "rain",  "diff_ranks", "bat_or_bowl",
+                 "type_of_match", "basic_type_of_match", "type_of_match2", "di_type_of_match", "men_type_of_match", "day_n_night", "youth", "women", "youth.women", "unofficial", "duckworth_lewis",
+                 "win_toss", "win_game", "home_wins_toss", "draw", "outcome", "wickets", "runs", "balls", "innings",
                  "ground", "ground_id", "country", "continent", "latitude", "longitude")
 
 # Team cols, rename for gather/separate to work well
-team_cols <- c("team1", "team2", "team1_id", "team2_id", "team2_rank", "team1_rank", "team1_win_toss", "team2_win_toss", "team1_win_game", "team2_win_game", 
-               "team1_home_country", "team2_home_country", 
+team_cols <- c("team1", "team2", "team1_id", "team2_id", "team2_rank", "team1_rank", "team1_win_toss", "team2_win_toss", "team1_win_game", "team2_win_game",
+               "team1_home_country", "team2_home_country",
                "team1_umpire1", "team2_umpire1", "team1_umpire2", "team2_umpire2", "team1_tv_umpire", "team2_tv_umpire", "team1_umpire", "team2_umpire")
 rename_cols <- c("team1.name", "team2.name", "team1.id", "team2.id", "team2.rank", "team1.rank", "team1.wintoss", "team2.wintoss", "team1.wingame", "team2.wingame",
-               "team1.homecountry", "team2.homecountry", 
+               "team1.homecountry", "team2.homecountry",
                "team1.umpire1", "team2.umpire1", "team1.umpire2", "team2.umpire2", "team1.tvumpire", "team2.tvumpire", "team1.umpire", "team2.umpire")
 names(cricket)[match(team_cols, names(cricket))] <- rename_cols
 
@@ -127,7 +128,7 @@ binom.test(2892, 5684, p=.5)
 
 "
 # Split by Home Umpires on Winning Toss and Winning Match
-# It was tested out with 1 umpire beginning in 1992 and then made standard with 2 in 2002: 
+# It was tested out with 1 umpire beginning in 1992 and then made standard with 2 in 2002:
 # http://www.espncricinfo.com/magazine/content/story/511175.html
 
 # Only international matches
@@ -142,7 +143,7 @@ ddply(crickett[!is.na(crickett$umpire1) & !is.na(crickett$umpire2) & crickett$di
 binom.test(1539, 2965, p=.5)
 
 "
-Note: 
+Note:
 Winning a toss causes outcome including draws.
 Imp. esp. for first class games
 "
@@ -232,19 +233,19 @@ win_match_type     <- win_match_type[order(win_match_type$basic_type_of_match),]
 win_match_type$lci <-  win_match_type$diff - 2*win_match_type$se*100
 win_match_type$hci <-  win_match_type$diff + 2*win_match_type$se*100
 
-ggplot(win_match_type, aes(x=diff, y=basic_type_of_match, xmin = lci, xmax = hci)) + 
-geom_point(color="#aaaaaa") + 
+ggplot(win_match_type, aes(x=diff, y=basic_type_of_match, xmin = lci, xmax = hci)) +
+geom_point(color="#aaaaaa") +
 geom_errorbarh(height = 0, color="#42c4c7") +
-geom_vline(xintercept = 0, color="grey", linetype="dashed") + 
-theme_minimal() + 
-labs(y="",x="Difference", size=10) + 
+geom_vline(xintercept = 0, color="grey", linetype="dashed") +
+theme_minimal() +
+labs(y="",x="Difference", size=10) +
 scale_x_continuous(breaks=seq(-2, 7, 1), labels= paste0(nolead0s(seq(-2, 7, 1)), "%"), limits=c(-2, 7), name="") +
-theme_base + 
-annotate("text", 
-   y = seq(1.1, nrow(win_match_type)+.4, 1), 
-   x = win_match_type$diff + .15, 
-   label = paste0(round(win_match_type$diff,2), "% \n (n =", format(win_match_type$count, big.mark=",", scientific=FALSE), ")"), 
-   colour = "#444444", 
+theme_base +
+annotate("text",
+   y = seq(1.1, nrow(win_match_type)+.4, 1),
+   x = win_match_type$diff + .15,
+   label = paste0(round(win_match_type$diff,2), "% \n (n =", format(win_match_type$count, big.mark=",", scientific=FALSE), ")"),
+   colour = "#444444",
    size = 2.5)
 ggsave("figs/winbyType.pdf", width=7)
 
@@ -263,28 +264,28 @@ ltd_day_n_night$lci   <-  ltd_day_n_night$diff - 2*ltd_day_n_night$se*100
 ltd_day_n_night$hci   <-  ltd_day_n_night$diff + 2*ltd_day_n_night$se*100
 ltd_day_n_night$id <- c(1,1.1,2,2.1)
 
-ggplot(ltd_day_n_night, aes(y=id, x=diff, xmin = lci, xmax = hci, color=day_n_night)) + 
-geom_point() + 
+ggplot(ltd_day_n_night, aes(y=id, x=diff, xmin = lci, xmax = hci, color=day_n_night)) +
+geom_point() +
 geom_errorbarh(height = 0) +
-geom_vline(xintercept = 0, color="grey", linetype="dashed") + 
-theme_minimal() + 
+geom_vline(xintercept = 0, color="grey", linetype="dashed") +
+theme_minimal() +
 ylab("") +
 scale_y_continuous(breaks=c(1.05,2.05), labels= c("LISTA/ODI", "T20/T20I"), limits=c(.5, 2.5), name="") +
-scale_color_manual(name="", values = c("#2b8cbe", "#31a354"), labels=c(" Day   ", " Day and Night")) + 
+scale_color_manual(name="", values = c("#2b8cbe", "#31a354"), labels=c(" Day   ", " Day and Night")) +
 scale_x_continuous(breaks=seq(-4, 10, 2), labels= paste0(nolead0s(seq(-4, 10, 2)), "%"), limits=c(-3, 10), name="") +
-theme_base + 
+theme_base +
 theme(legend.position="none") +
-annotate("text", 
-   y = c(1.1,1.2,1.9,2.2), 
-   x = ltd_day_n_night$diff + .175, 
-   label = paste0(round(ltd_day_n_night$diff,2), "% \n (n =", format(ltd_day_n_night$count, big.mark=",", scientific=FALSE), ")"), 
-   colour = "#444444", 
+annotate("text",
+   y = c(1.1,1.2,1.9,2.2),
+   x = ltd_day_n_night$diff + .175,
+   label = paste0(round(ltd_day_n_night$diff,2), "% \n (n =", format(ltd_day_n_night$count, big.mark=",", scientific=FALSE), ")"),
+   colour = "#444444",
    size = 2.5) +
-annotate("text", 
-   y = c(1,1.1, 2,2.1), 
+annotate("text",
+   y = c(1,1.1, 2,2.1),
    x = ltd_day_n_night$hci + .75,
-   label = c("Day", "Day/Night", "Day", "Day/Night"), 
-   colour = c("#2b8cbe", "#31a354", "#2b8cbe", "#31a354"), 
+   label = c("Day", "Day/Night", "Day", "Day/Night"),
+   colour = c("#2b8cbe", "#31a354", "#2b8cbe", "#31a354"),
    size = 2.5)
 ggsave("figs/winbyDayNight.pdf", width=5.5)
 
@@ -300,27 +301,27 @@ ltd_dl$lci   <-  ltd_dl$diff - 2*ltd_dl$se*100
 ltd_dl$hci   <-  ltd_dl$diff + 2*ltd_dl$se*100
 ltd_dl$id    <- c(1,1.1,2,2.1)
 
-ggplot(ltd_dl, aes(y=id, x=diff, xmin = lci, xmax = hci, color=factor(duckworth_lewis))) + 
-geom_point() + 
+ggplot(ltd_dl, aes(y=id, x=diff, xmin = lci, xmax = hci, color=factor(duckworth_lewis))) +
+geom_point() +
 geom_errorbarh(height = 0) +
-geom_vline(xintercept = 0, color="grey", linetype="dashed") + 
+geom_vline(xintercept = 0, color="grey", linetype="dashed") +
 theme_minimal() +
-scale_y_continuous(breaks=c(1.05,2.05), labels= c("LISTA/ODI", "T20/T20I"), limits=c(.5, 2.5), name="") + 
-scale_color_manual(name="", values = c("#2b8cbe", "#31a354"), labels=c(" No D/L   ", " Duckworth Lewis")) + 
+scale_y_continuous(breaks=c(1.05,2.05), labels= c("LISTA/ODI", "T20/T20I"), limits=c(.5, 2.5), name="") +
+scale_color_manual(name="", values = c("#2b8cbe", "#31a354"), labels=c(" No D/L   ", " Duckworth Lewis")) +
 scale_x_continuous(breaks=seq(-2, 7, 1), labels= paste0(nolead0s(seq(-2, 7, 1)), "%"), limits=c(-2, 7.4), name="") +
 theme_base +
 theme(legend.position="none") +
-annotate("text", 
-   y = c(1.1,1.2,1.9,2.2), 
+annotate("text",
+   y = c(1.1,1.2,1.9,2.2),
    x = ltd_dl$diff,
-   label = paste0(round(ltd_dl$diff,2), "% \n (n =", format(ltd_dl$count, big.mark=",", scientific=FALSE), ")"), 
-   colour = "#444444", 
+   label = paste0(round(ltd_dl$diff,2), "% \n (n =", format(ltd_dl$count, big.mark=",", scientific=FALSE), ")"),
+   colour = "#444444",
    size = 2.5) +
-annotate("text", 
-   y = c(1, 1.1, 2, 2.1), 
+annotate("text",
+   y = c(1, 1.1, 2, 2.1),
    x = ltd_dl$hci + c(.45, .35, .45, .35),
-   label = c("No D/L", "D/L", "No D/L", "D/L"), 
-   colour = c("#2b8cbe", "#31a354", "#2b8cbe", "#31a354"), 
+   label = c("No D/L", "D/L", "No D/L", "D/L"),
+   colour = c("#2b8cbe", "#31a354", "#2b8cbe", "#31a354"),
    size = 2.5)
 ggsave("figs/winbyDL.pdf", width=5.5)
 
@@ -340,14 +341,14 @@ rankcricket$wingamer <- as.numeric(rankcricket$wingame)*100
 library(lme4)
 summary(with(rankcricket, lm(wingamer ~ zero1(signed_diff_ranks))))
 
-ggplot(rankcricket, aes(x=signed_diff_ranks, y=wingamer)) + 
-geom_smooth(size=.4, col="#2b8cbe") + 
+ggplot(rankcricket, aes(x=signed_diff_ranks, y=wingamer)) +
+geom_smooth(size=.4, col="#2b8cbe") +
 geom_vline(xintercept=0, col="#333333", linetype="dashed", alpha=.3, size=.1) +
 scale_x_continuous(breaks=seq(-150, 150, 30), labels=nolead0s(seq(-150, 150, 30)), limits=c(-134, 134), name="Difference in Ranking Points") +
-scale_y_continuous(breaks=seq(0, 100, 10), labels=paste0(nolead0s(seq(0, 100, 10)), "%"), limits=c(0, 100), name="Percentage Won/Drawn") + 
-theme_minimal() +  
-theme_base + 
-theme(legend.position=c(.12, .85), 
+scale_y_continuous(breaks=seq(0, 100, 10), labels=paste0(nolead0s(seq(0, 100, 10)), "%"), limits=c(0, 100), name="Percentage Won/Drawn") +
+theme_minimal() +
+theme_base +
+theme(legend.position=c(.12, .85),
       legend.title =element_blank(),
       legend.key.height=unit(1.05,"line"),
       legend.key.size = unit(.9, "line")) +
@@ -371,24 +372,24 @@ by_month$lci   <-  by_month$diff - 2*by_month$se*100
 by_month$hci   <-  by_month$diff + 2*by_month$se*100
 by_month$month <- ordered(by_month$month, month.abb)
 
-ggplot(by_month, aes(y=month, x=diff, xmin = lci, xmax = hci)) + 
-geom_point(color="#aaaaaa") + 
-theme_minimal() + 
+ggplot(by_month, aes(y=month, x=diff, xmin = lci, xmax = hci)) +
+geom_point(color="#aaaaaa") +
+theme_minimal() +
 geom_errorbarh(height = 0, color="#42c4c7") +
-geom_vline(xintercept = 0, color="grey", linetype="dashed") + 
+geom_vline(xintercept = 0, color="grey", linetype="dashed") +
 ylab("") +
 scale_x_continuous(breaks=seq(-12, 12, 2), labels= paste0(nolead0s(seq(-12, 12, 2)), "%"), limits=c(-11, 11), name="") +
-theme_base + 
-annotate("text", 
-   y = seq(1.2, 6.6, 1), 
-   x = by_month$diff + .15, 
-   label = paste0(round(by_month$diff,2), "% \n (n =", format(by_month$count, big.mark=",", scientific=FALSE), ")"), 
-   colour = "#444444", 
+theme_base +
+annotate("text",
+   y = seq(1.2, 6.6, 1),
+   x = by_month$diff + .15,
+   label = paste0(round(by_month$diff,2), "% \n (n =", format(by_month$count, big.mark=",", scientific=FALSE), ")"),
+   colour = "#444444",
    size = 2.5)
 ggsave("figs/winbyMonthEngland.pdf", width=6)
 
 "
-Toss Adv. by Country - Are some countries better than others. Hard to say in some ways as competing against v. diff. teams. 
+Toss Adv. by Country - Are some countries better than others. Hard to say in some ways as competing against v. diff. teams.
 For this - we would want to do Win/Win Toss - Win/Lose Toss to adjust for team probab.
 
 "
@@ -402,19 +403,19 @@ by_country$se    <-  se$se[match(by_country$name, se$name)]
 by_country$lci   <-  by_country$diff - 2*by_country$se*100
 by_country$hci   <-  by_country$diff + 2*by_country$se*100
 
-ggplot(by_country, aes(y=name, x=diff, xmin = lci, xmax = hci)) + 
-geom_point(color="#aaaaaa") + 
+ggplot(by_country, aes(y=name, x=diff, xmin = lci, xmax = hci)) +
+geom_point(color="#aaaaaa") +
 geom_errorbarh(height = 0, color="#42c4c7") +
-geom_vline(xintercept = 0, color="grey", linetype="dashed") + 
-theme_minimal() + 
+geom_vline(xintercept = 0, color="grey", linetype="dashed") +
+theme_minimal() +
 ylab("") +
 scale_x_continuous(breaks=seq(-10, 10, 2), labels= paste0(nolead0s(seq(-10, 10, 2)), "%"), limits=c(-10, 10), name="") +
-theme_base + 
-annotate("text", 
-   y = seq(1, 7, 1), 
-   x = ifelse(by_country$diff > 0, by_country$diff + .35, by_country$diff - .35), 
-   label = paste0(round(by_country$diff,2), "% \n (n =", format(by_country$count, big.mark=",", scientific=FALSE), ")"), 
-   colour = "#444444", 
+theme_base +
+annotate("text",
+   y = seq(1, 7, 1),
+   x = ifelse(by_country$diff > 0, by_country$diff + .35, by_country$diff - .35),
+   label = paste0(round(by_country$diff,2), "% \n (n =", format(by_country$count, big.mark=",", scientific=FALSE), ")"),
+   colour = "#444444",
    size = 2.5)
 ggsave("figs/winbyCountry.pdf", width=6)
 
@@ -427,11 +428,11 @@ ddply(crickett, ~basic_type_of_match + di_type_of_match + wintoss, summarise, me
 
 
 "
-Is there over time learning? If so, toss adv. would increase. 
-Or it could be that teams develop better strategies to offset toss advantage. 
+Is there over time learning? If so, toss adv. would increase.
+Or it could be that teams develop better strategies to offset toss advantage.
 If you are going to come up short half the times, you develop strategies to counter that.
 But lots of moving parts for over time stuff. For instance, format is a concern. Certain formats not around earlier.
-" 
+"
 small_set <- subset(crickett, name %in% c("India", "Australia", "West Indies", "England", "New Zealand", "Pakistan", "Sri Lanka"))
 ddply(crickett, ~ year + name, summarise, diff = mean(wingame[wintoss==1]) - mean(wingame[wintoss==0]), count=length(unique(url)))
 

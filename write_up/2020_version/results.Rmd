@@ -177,7 +177,7 @@ crickett[, .N, mid][order(-N)][1]
 # %% # ## Subsample (for now)
 crickett$type_of_match %>% tabyl
 regsamp = crickett[type_of_match  %in%
-  c("ODI", "T20", "T20I", "Twenty20", "TEST", "FC", "LISTA", "Women's T20")]
+  c("ODI", "T20", "T20I", "Twenty20", "TEST", "FC")]
 # %% throw out matches with no results / cancelled / walkover
 regsamp[outcome %like% 'abandoned' | outcome %like% 'cancelled', .N]
 regsamp = regsamp[!(outcome %like% 'abandoned' | outcome %like% 'cancelled')]
@@ -263,7 +263,10 @@ iv_est_2     = felm(wingame ~ 1 |
 iv_est_3     = felm(wingame ~ 1 |
                     as.factor(name) + as.factor(type_of_match2) + as.factor(time_unit) |
                     (bat_first ~ wintoss) | mid, regsamp)
-# %%
+```
+
+```{r}
+ols          = felm(wingame ~ bat_first | 0 | 0 | mid , regsamp)
 ```
 
 

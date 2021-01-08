@@ -7,19 +7,13 @@ LalRUtils::libreq(tidyverse, stargazer2, lfe, rio,
 theme_set(lal_plot_theme())
 options(repr.plot.width=12, repr.plot.height=9)
 
-# %% [markdown]
-# # Data Cleaning
-# run this whole section once, then start with [Empirics](#Empirics)
 
 # %%
 # setwd(root)
 root = '/home/alal/Dropbox/1_Research/cricket/'
 datadir = file.path(root, "repos/cricket-stats/data")
 
-# %% [markdown]
-# ## Ingest
-
-# %%
+# %% input data
 odi_ranks  <- fread(file.path(datadir,"rankings_odi.csv"))
 test_ranks <- fread(file.path(datadir,"rankings_test.csv"))
 ranks <- rbind(odi_ranks, test_ranks)
@@ -35,6 +29,9 @@ match[bat_or_bowl %in% c(0, NA), .N, by = outcome] [order(-N)]
 match = match[!(bat_or_bowl %in% c(0, NA))]
 
 # %% date processing
+
+match %>% glimpse
+
 # Match dates - need only month and year
 # Clean a bit
 match[, date2 := str_trim(date)]
@@ -64,14 +61,13 @@ match$year  <- ifelse(as.numeric(temp[,3]) < 1700,
 match[order(-year), .(month, day, year)]
 
 # %%
-# manual fix for bad years
+# manual fix for bad year variables
 match[, year := ifelse(year > 2020, year - 100,year)]
 match[, .(month, day, year, date, date2)][order(-year)][1:10]
 
-# %% [markdown]
-# ## Match Types
 
-# %%
+
+# %%# ## Match Types
 # International can be split by men, women, youth
 # Domestic matches apparently cannot be as we don't have that info.
 # See: https://github.com/dwillis/cricket-stats/issues/15
@@ -114,24 +110,13 @@ match[, day_n_night := ifelse(day_n_night=="night match", "day/night match", day
 match[, team1_spid  := tolower(paste0(men_type_of_match, team1, month, year))]
 match[, team2_spid  := tolower(paste0(men_type_of_match, team2, month, year))]
 
-# %% [markdown]
-# ## Rankings
+match[, .(team1_spid, team2_spid)] %>% head
 
 # %%
+# %% ## Rankings
 # Uniques for odi and test
 # It is not ranking but rating data (higher the better)
 ranks[, unique :=  tolower(paste0(format, country,  month,  year))]
-
-ranks %>% head
-match[, team1_spid, team2_spid] %>% head
-# %%
-# match1 = merge(match, ranks[, .(unique, rank, rating)], by.x = 'team1_spid', by.y = 'unique',
-#   all.x = T)
-# setnames(match1, c("rank", "rating"), c("rank_t1", "rating_t1"))
-#
-# match2 = merge(match1, ranks[, .(unique, rank, rating)], by.x = 'team2_spid', by.y = 'unique',
-#   all.x = T, suffixes = c("", "_t2"))
-#
 # %%
 # merge - the sood way
 match$team1_rank  <- match$team2_rank <- NA
@@ -139,6 +124,8 @@ match$team1_rank  <- ranks$rating[match(match$team1_spid, ranks$unique)]
 match$team2_rank  <- ranks$rating[match(match$team2_spid, ranks$unique)]
 
 # %%
+# match[is.na(team1_rank) & men_type_of_match == "ODI", .(men_type_of_match, year, month)]
+
 # Adhoc data integrity check
 match$team1_rank[match$men_type_of_match=='ODI' & match$month==4] %>% print
 table(match$team1[!is.na(match$team1_rank)])
@@ -216,6 +203,8 @@ match$team1_umpire <- rowSums(cbind(match$team1_umpire1, match$team1_umpire2, ma
 match$team2_umpire <- rowSums(cbind(match$team2_umpire1, match$team2_umpire2, match$team2_tv_umpire), na.rm=T)
 
 # %%
+match$outcome %>% tabyl
+
 # Margin of victory
 # number of runs, balls, wickets, innings
 split_by <- sapply(strsplit(match$outcome, " by "), "[", 2)
@@ -231,8 +220,19 @@ match[, result := case_when(
   TRUE ~ "other"
 )]
 
-match[result == "other", unique(outcome)] %>% head
+match[result == "other", unique(outcome)]
 
+# %% examine cancelled
+match[grepl('No result', outcome)] %>% setDT  -> cancelled_matches
+cancelled_matches = cancelled_matches[type_of_match %in% c("ODI", "T20", "T20I", "Twenty20", "TEST", "FC")]
+cancelled_matches %>%
+  fwrite(file.path(root, 'tmp/dropped_matches.csv'))
+
+cancelled_matches %>% nrow
+
+
+# %% drop cancelled
+cricket %>% nrow
 cricket = match[!grepl('No result', outcome)]
 
 # %%
