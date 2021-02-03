@@ -3,7 +3,7 @@ rm(list = ls())
 library(LalRUtils)
 LalRUtils::libreq(tidyverse, data.table, stargazer2, broom, fixest,
   lfe, ivmodel, fastDummies, patchwork, purrr, kableExtra, xtable,
-  rio, magrittr, janitor, knitr, ggrepel)
+  rio, magrittr, janitor, knitr, ggrepel, mediation)
 theme_set(lal_plot_theme())
 options(repr.plot.width=12, repr.plot.height=9)
 set.seed(42)
@@ -19,13 +19,13 @@ reg_by_group2 = function(df, groupvar, fml){
   require(dplyr) ; require(purrr) ; require(broom)
   group_reg_tables = df %>%
     group_by({{groupvar}}) %>%
-    group_map( ~ robustify(felm(fml, .x)) %>%
+    group_map( ~ feols(fml, .x, cluster = ~mid) %>%
       tidy %>% mutate(group = .y[[1]]), .keep = T)
   return(group_reg_tables)
 }
 
 counter = function(df, groupvar){
-  df %>% tabyl({{groupvar}}) %>% mutate(n = n/2) %>% select(-percent) %>%
+  df %>% tabyl({{groupvar}}) %>% mutate(n = n/2) %>% dplyr::select(-percent) %>%
   rename(group = {{groupvar}})
 }
 
@@ -133,10 +133,48 @@ regsamp[, time_unit  := cut(year,
              "1991-2000", "2001-2010", "2011-2020"))]
 # regsamp[, tabyl(year), by = time_unit]
 
+
+# %% create team-FE for teams with more than 10 matches
+regsamp[, team_nmatches := .N, name]
+regsamp[, teamname := ifelse(team_nmatches > 10, name, "Misc")]
+
+regsamp[, tabyl(type_of_match)]
+# %%
 # sanity checks - these should be perfectly balanced
 regsamp[, .N, bat_first]
 regsamp[, .N, wingame]
 regsamp[, .N, wintoss]
+
+# %%
+# %%
+regsamp %>%
+  tabyl(wintoss, wingame) %>%
+  adorn_percentages("row") %>%
+  adorn_pct_formatting()
+regsamp %>%
+  tabyl(wintoss, bat_first) %>%
+  adorn_percentages("row") %>%
+  adorn_pct_formatting()
+
+regsamp[bat_or_bowl == 1]  %>%
+  tabyl(wintoss, wingame) %>%
+  adorn_percentages("row") %>%
+  adorn_pct_formatting()
+regsamp[bat_or_bowl == 2]  %>%
+  tabyl(wintoss, wingame) %>%
+  adorn_percentages("row") %>%
+  adorn_pct_formatting()
+
+
+# %%
+.381 * .565 + .408 * .435
+
+.381 * .565 + .408 * .435
+
+# %%
+
+
+# %%
 
 regsamp[type_of_match == "ODI"] %>%
   tabyl(wintoss, wingame) %>%
@@ -157,14 +195,6 @@ regsamp[type_of_match == "FC"] %>%
   tabyl(wintoss, wingame) %>%
   adorn_percentages("row") %>%
   adorn_pct_formatting()
-
-# %% create team-FE for teams with more than 10 matches
-regsamp[, team_nmatches := .N, name]
-regsamp[, teamname := ifelse(team_nmatches > 10, name, "Misc")]
-
-# %%
-regsamp[, tabyl(type_of_match)]
-# %%
 
 ######  ##     ## ##     ##  ######  ########    ###    ########  ######
 ##    ## ##     ## ###   ### ##    ##    ##      ## ##      ##    ##    ##
@@ -533,394 +563,145 @@ eng = regsamp[country == "England" & month != 3]
 ggsave(file.path(outdir, 'reduced_form_by_rank_dl_season.pdf'), p_rf_het3,
   height = 10, width = 10, device = cairo_pdf)
 
-
-
 # %%
-########     ###    ########
-##     ##   ## ##      ##
-##     ##  ##   ##     ##
-########  ##     ##    ##
-##     ## #########    ##
-##     ## ##     ##    ##
-########  ##     ##    ##
+######## #### ########   ######  ########  ######  ########    ###     ######   ########
+##        ##  ##     ## ##    ##    ##    ##    ##    ##      ## ##   ##    ##  ##
+##        ##  ##     ## ##          ##    ##          ##     ##   ##  ##        ##
+######    ##  ########   ######     ##     ######     ##    ##     ## ##   #### ######
+##        ##  ##   ##         ##    ##          ##    ##    ######### ##    ##  ##
+##        ##  ##    ##  ##    ##    ##    ##    ##    ##    ##     ## ##    ##  ##
+##       #### ##     ##  ######     ##     ######     ##    ##     ##  ######   ########
 
-# %%
-
-# %%
-ols          = felm(wingame ~ bat_first | 0 | 0 | mid , regsamp)
-# matches where toss-winner chose to bat first
-ols0         = felm(wingame ~ bat_first | 0 | 0 | mid , regsamp[bat_or_bowl == 1])
-# matches where toss-winner chose to field first
-ols1         = felm(wingame ~ bat_first | 0 | 0 | mid , regsamp[bat_or_bowl == 2])
-first_stage  = felm(bat_first ~ wintoss | 0 | 0 | mid , regsamp)
-iv_est       = felm(wingame ~ 1 | 0 | (bat_first ~ wintoss) | mid , regsamp)
-iv_est_2     = felm(wingame ~ 1 |
-                    name + type_of_match2 | (bat_first ~ wintoss) | mid, regsamp)
-iv_est_3     = felm(wingame ~ 1 |
-                    name + type_of_match2 + time_unit |
-                    (bat_first ~ wintoss) | mid, regsamp)
-# %% Wide IV table
-reglabs = c("Bat First", "Win Toss", "Bat First (IV)")
-
-stargazer(ols, ols0, ols1,
-          first_stage,
-          iv_est, iv_est_2, iv_est_3,
-  add.lines = list(c("Sample",
-                    "All", "TW bats", "TW fields", "All", "All", "All", "All", "All"),
-                  c("FS F-Stat", "", "", "", "", "",
-                      fstatrow(iv_est), fstatrow(iv_est_2), fstatrow(iv_est_3)),
-                  marker('Team FE',       c(F, F, F, F, F, T, T)),
-                  marker('Match-Type FE', c(F, F, F, F, F, T, T)),
-                  marker('Decade FE',     c(F, F, F, F, F, F, T)),
-  c("\\hline"),
-  c("Number of Matches", ols$N/2, ols0$N/2, ols1$N/2, first_stage$N/2, iv_est$N/2, iv_est_2$N/2, iv_est_3$N/2)
-  ))
-
-# %%
-stargazer(ols, ols0, ols1,
-          first_stage,
-          iv_est, iv_est_2, iv_est_3,
-  add.lines = list(c("Sample",
-                    "All", "TW bats", "TW fields", "All", "All", "All", "All", "All"),
-                  c("FS F-Stat", "", "", "", "", "",
-                      fstatrow(iv_est), fstatrow(iv_est_2), fstatrow(iv_est_3)),
-                  marker('Team FE',       c(F, F, F, F, F, T, T)),
-                  marker('Match-Type FE', c(F, F, F, F, F, T, T)),
-                  marker('Decade FE',     c(F, F, F, F, F, F, T)),
-  c("\\hline"),
-  c("Number of Matches", ols$N/2, ols0$N/2, ols1$N/2, first_stage$N/2, iv_est$N/2, iv_est_2$N/2, iv_est_3$N/2)
-  ),
-  omit.table.layout = 'sn',
-  covariate.labels = reglabs,
-  float = F,
-  dep.var.labels.include = FALSE,
-  column.labels   = c("OLS", "First-Stage", "IV"),
-  column.separate = c(3, 1, 3),
-  type = outf,
-  out = file.path(outdir, 'iv_table.tex'))
-
-# %%
-iv_intl_domestic = reg_by_group(
+(p_intl_domestic = reg_by_group2(
   regsamp[!is.na(di_type_of_match) & di_type_of_match != ""],
     di_type_of_match,
-    wingame ~ 1 | 0 | (bat_first ~ wintoss)| mid)
-
-iv_dn = reg_by_group(regsamp[type_of_match2 %in% c('OD', 'T20')], day_n_night,
-        wingame ~ 1 | 0 | (bat_first ~ wintoss)| mid)
-
-# %%
-stargazer(iv_intl_domestic, iv_dn, omit.table.layout = 'sn',
-  column.labels = c('Domestic', 'International', 'Day', 'Day/Night'),
-  covariate.labels = c("Bat First"),
-  float=F,
-  label = "table:iv_het",
-  dep.var.labels.include = FALSE,
-  add.lines = list(
-    c("\\hline"),
-    c("Number of Matches",
-    iv_intl_domestic[[1]]$N/2, iv_intl_domestic[[2]]$N/2,
-    iv_dn[[1]]$N/2, iv_dn[[2]]$N/2)),
-  type = outf,
-  out = file.path(outdir, 'iv_het.tex')
-  )
-
-# %% subgroup figs
-(iv_intl_domestic = reg_by_group2(
-  regsamp[!is.na(di_type_of_match) & di_type_of_match != ""],
-    di_type_of_match,
-    wingame ~ 1 | 0 | (bat_first ~ wintoss)| mid) %>% rbindlist %>%
-  .[term == '`bat_first(fit)`']  %>%
-  inner_join(counter(regsamp[!is.na(di_type_of_match) & di_type_of_match != ""], di_type_of_match), by = "group") %>%
-  ann_coefplotter(title = 'intl / domestic')
+    formula_fixest('bat_first', 'wintoss')) %>% rbindlist %>%
+  .[term == 'wintoss'] %>%
+  inner_join(counter(regsamp[!is.na(di_type_of_match) & di_type_of_match != ""],
+      di_type_of_match), by = "group") %>%
+  ann_coefplotter(title = 'Intl / Domestic')
 )
 
-(iv_dn = reg_by_group2(regsamp[type_of_match2 %in% c('OD', 'T20')], day_n_night,
-    wingame ~ 1 | 0 | (bat_first ~ wintoss)| mid) %>%
+(p_dn = reg_by_group2(regsamp[type_of_match2 %in% c('OD', 'T20')], day_n_night,
+        formula_fixest('bat_first', 'wintoss')) %>%
   rbindlist %>%
-  .[term == '`bat_first(fit)`']  %>%
+  .[term == 'wintoss'] %>%
   inner_join(counter(regsamp[type_of_match2 %in% c('OD', 'T20')], day_n_night), by = "group") %>%
-  ann_coefplotter(title = 'day / night')
-)
+  ann_coefplotter(title = 'Day / Night'))
 
 (p_matchtype = reg_by_group2(regsamp, type_of_match2,
-    wingame ~ 1 | 0 | (bat_first ~ wintoss) | mid) %>% rbindlist %>%
-  .[term == '`bat_first(fit)`'] %>%
+    formula_fixest('bat_first', 'wintoss')) %>% rbindlist %>%
+  .[term == 'wintoss'] %>%
   inner_join(counter(regsamp, type_of_match2), by = "group") %>%
-  ann_coefplotter(title = 'match type')
-)
+  ann_coefplotter(title = 'match type'))
 
 (p_bygeo = reg_by_group2(regsamp[continent != "" & !is.na(continent)], continent,
-        wingame ~ 1 | 0 | (bat_first ~ wintoss) | mid) %>% rbindlist %>%
-      .[term == "`bat_first(fit)`"] %>%
+        formula_fixest('bat_first', 'wintoss')) %>% rbindlist %>%
+      .[term == "wintoss"] %>%
       inner_join(counter(regsamp[continent != "" & !is.na(continent)], continent), by = "group") %>%
-      ann_coefplotter(., "by continent")
-)
+      ann_coefplotter(., "by continent"))
 
-(p_iv_het = (iv_intl_domestic + coord_flip() | iv_dn + coord_flip()) / (p_matchtype | p_bygeo) +
-  plot_annotation('Heterogeneous Treatment Effects of batting first on Win Probability')
-)
+p_fs_het = ((p_intl_domestic | p_dn) / p_matchtype /  p_bygeo) +
+  plot_annotation('Heterogeneous Treatment Effects of the Toss on Choice to Bat First')
 
-ggsave(file.path(outdir, 'iv_by_matchtype.pdf'), p_iv_het,
-  height = 10, width = 10, device = cairo_pdf)
+ggsave(file.path(outdir, 'first_stage_by_matchtype.pdf'), p_fs_het,
+  height = 15, width = 10, device = cairo_pdf)
 
-# %% over time match
+# %% over time by format
 (p_overtime = reg_by_group2(regsamp, time_unit,
-      wingame ~ 1 | 0 | (bat_first ~ wintoss) | mid) %>% rbindlist %>%
-    .[term == "`bat_first(fit)`"] %>%
+      formula_fixest('bat_first', 'wintoss')) %>% rbindlist %>%
+    .[term == "wintoss"] %>%
     inner_join(counter(regsamp, time_unit), by = "group") %>%
-    ann_coefplotter(., "All") + coord_flip() + xlim(c(NA, 1)) +
-  lal_plot_theme(textangle = 90)
+    ann_coefplotter(., "All matches", hn = 1) + coord_flip() +
+  lal_plot_theme(textangle = 90))
+
+(p_odi_time = reg_by_group2(
+  regsamp[type_of_match == "ODI"],
+    time_unit,
+    formula_fixest('bat_first', 'wintoss')) %>% rbindlist %>%
+  .[term == 'wintoss'] %>%
+  inner_join(counter(regsamp[type_of_match == "ODI"], time_unit), by = "group") %>%
+  ann_coefplotter(title = 'ODI over time') + coord_flip()
+)
+
+(p_test_time = reg_by_group2(
+  regsamp[type_of_match == "TEST"],
+    time_unit,
+    formula_fixest('bat_first', 'wintoss')) %>% rbindlist %>%
+  .[term == 'wintoss'] %>%
+  inner_join(counter(regsamp[type_of_match == "TEST"], time_unit), by = "group") %>%
+  ann_coefplotter(title = 'TEST over time') + coord_flip()
+)
+
+(p_fc_time = reg_by_group2(
+  regsamp[type_of_match == "FC"],
+    time_unit,
+    formula_fixest('bat_first', 'wintoss')) %>% rbindlist %>%
+  .[term == 'wintoss'] %>%
+  inner_join(counter(regsamp[type_of_match == "FC"], time_unit), by = "group") %>%
+  ann_coefplotter(title = 'FC over time') + coord_flip()
 )
 
 
-(p_overtime_test = reg_by_group2(regsamp[type_of_match2 == "TEST"], time_unit,
-      wingame ~ 1 | 0 | (bat_first ~ wintoss) | mid) %>% rbindlist %>%
-    .[term == "`bat_first(fit)`"] %>%
-    inner_join(counter(regsamp[type_of_match2 == "TEST"], time_unit), by = "group") %>%
-    ann_coefplotter(., "Test") + coord_flip() + xlim(c(NA, 1)) +
-  lal_plot_theme(textangle = 90)
+(p_t20_time = reg_by_group2(
+  regsamp[type_of_match == "T20"],
+    time_unit,
+    formula_fixest('bat_first', 'wintoss')) %>% rbindlist %>%
+  .[term == 'wintoss'] %>%
+  inner_join(counter(regsamp[type_of_match == "T20"], time_unit), by = "group") %>%
+  ann_coefplotter(title = 'T20 over time') + coord_flip()
 )
-
-(p_overtime_fc = reg_by_group2(regsamp[type_of_match2 == "FC"], time_unit,
-      wingame ~ 1 | 0 | (bat_first ~ wintoss) | mid) %>% rbindlist %>%
-    .[term == "`bat_first(fit)`"] %>%
-    inner_join(counter(regsamp[type_of_match2 == "FC"], time_unit), by = "group") %>%
-    ann_coefplotter(., "FC") + coord_flip() + xlim(c(NA, 1)) +
-  lal_plot_theme(textangle = 90)
-)
-
-(p_overtime_od = reg_by_group2(regsamp[type_of_match2 == "OD"], time_unit,
-      wingame ~ 1 | 0 | (bat_first ~ wintoss) | mid) %>% rbindlist %>%
-    .[term == "`bat_first(fit)`"] %>%
-    inner_join(counter(regsamp[type_of_match2 == "OD"], time_unit), by = "group") %>%
-    ann_coefplotter(., "OD") + coord_flip() + xlim(c(NA, 1)) +
-  lal_plot_theme(textangle = 90)
-)
-
-(p_overtime_t20 = reg_by_group2(regsamp[type_of_match2 == "T20"], time_unit,
-      wingame ~ 1 | 0 | (bat_first ~ wintoss) | mid) %>% rbindlist %>%
-    .[term == "`bat_first(fit)`"] %>%
-    inner_join(counter(regsamp[type_of_match2 == "T20"], time_unit), by = "group") %>%
-    ann_coefplotter(., "T20") + coord_flip()
-)
-
-(p_overtime = (p_overtime / p_overtime_test / p_overtime_fc / (p_overtime_od | p_overtime_t20)) +
-  plot_annotation(title = "The First-batter advantage over time by format"))
-
-ggsave(file.path(outdir, 'iv_by_matchtype_overtime.pdf'), p_overtime,
-  height = 15, width = 15, device = cairo_pdf)
 
 # %%
+p_fs_het = (p_overtime / p_test_time  / p_fc_time / ( p_odi_time | p_t20_time )) +
+  plot_annotation('Heterogeneous Treatment Effects of the Toss on Bat Choice by Format over time')
 
+ggsave(file.path(outdir, 'first_stage_by_format_overtime.pdf'), p_fs_het,
+  height = 15, width = 12, device = cairo_pdf)
+
+# %%
+rank_exists = regsamp[type_of_match2 %in% c("OD", "TEST") & !is.na(rank)]
+rank_exists[, diff_rank := abs(rank[1] - rank[2]), by = mid]
+rank_exists[, big_gap   := ifelse(diff_rank > 15, 1, 0), by = mid]
+
+# %%
 (p_rank_test = reg_by_group2(rank_exists[!is.na(big_gap) & type_of_match == "TEST"], big_gap,
-        wingame ~ 1 | 0 | (bat_first ~ wintoss) | mid) %>% rbindlist %>%
-    .[term == "`bat_first(fit)`"] %>%
+        formula_fixest('bat_first', 'wintoss')) %>% rbindlist %>%
+    .[term == "wintoss"]  %>%
     inner_join(counter(rank_exists[!is.na(big_gap) & type_of_match == "TEST"], big_gap), by = "group") %>%
     mutate(group = as.factor(group)) %>%
     ann_coefplotter(., "Gaps in Rank: Test")
 )
 
 (p_rank_odi = reg_by_group2(rank_exists[!is.na(big_gap) & type_of_match == "ODI"], big_gap,
-      wingame ~ 1 | 0 | (bat_first ~ wintoss) | mid) %>% rbindlist %>%
-    .[term == "`bat_first(fit)`"] %>%
+        formula_fixest('bat_first', 'wintoss')) %>% rbindlist %>%
+    .[term == "wintoss"]  %>%
     inner_join(counter(rank_exists[!is.na(big_gap) & type_of_match == "ODI"], big_gap), by = "group") %>%
     mutate(group = as.factor(group)) %>%
     ann_coefplotter(., "Gaps in Rank: ODI")
 )
 
 (p_dl = reg_by_group2(regsamp[type_of_match == "ODI"], duckworth_lewis,
-      wingame ~ 1 | 0 | (bat_first ~ wintoss) | mid) %>% rbindlist %>%
-    .[term == "`bat_first(fit)`"] %>%
+        formula_fixest('bat_first', 'wintoss')) %>% rbindlist %>%
+    .[term == "wintoss"]  %>%
     inner_join(counter(regsamp[type_of_match == "ODI"], duckworth_lewis), by = "group") %>%
     mutate(group = as.factor(group)) %>%
     ann_coefplotter(., "By Use of Duckworth Lewis")
 )
 
-
 eng = regsamp[country == "England" & month != 3]
 (p_season = reg_by_group2(eng, month,
-      wingame ~ 1 | 0 | (bat_first ~ wintoss) | mid) %>% rbindlist %>%
-    .[term == "`bat_first(fit)`"] %>%
+        formula_fixest('bat_first', 'wintoss')) %>% rbindlist %>%
+    .[term == "wintoss"]  %>%
     inner_join(counter(eng, month), by = "group") %>%
     mutate(group = as.factor(group)) %>%
     ann_coefplotter(., "Month of the year (in England)") + coord_flip()
 )
 
-
-p_iv_het3 = ((p_rank_test | p_rank_odi | p_dl) /  p_season) +
-  plot_annotation('First Batter Advantage by Rank, Rain Interruptions, and Seasonality')
-
-ggsave(file.path(outdir, 'iv_by_rank_dl_season.pdf'), p_iv_het3,
-  height = 10, width = 10, device = cairo_pdf)
-
-
-# %%
-p_season_fs = reg_by_group2(eng, month,
-      bat_first ~ wintoss | 0 | 0 | mid) %>% rbindlist %>%
-    .[term == "wintoss"] %>%
-    inner_join(counter(eng, month), by = "group") %>%
-    mutate(group = as.factor(group)) %>%
-    ann_coefplotter(., "First Stage by Month of the year (in England)") + coord_flip()
-
-
-ggsave(file.path(outdir, 'first_stage_season.pdf'), p_season_fs,
-    height = 5, width = 8, device = cairo_pdf)
-
-# %%
-
-(p_conti_fs = reg_by_group2(regsamp[continent != ""], continent,
-      bat_first ~ wintoss | 0 | 0 | mid) %>% rbindlist %>%
-    .[term == "wintoss"] %>%
-    inner_join(counter(regsamp[continent != ""], continent), by = "group") %>%
-    mutate(group = as.factor(group)) %>%
-    ann_coefplotter(., "First Stage by Continent")
+(p_fs_het3 = ((p_rank_test | p_rank_odi | p_dl) /  p_season) +
+  plot_annotation('Heterogeneous Treatment Effects of the Toss on bat choice', subtitle = 'by Rank, Rain Interruptions, and Seasonality')
 )
-ggsave(file.path(outdir, 'first_stage_continent.pdf'), p_conti_fs,
-    height = 5, width = 8, device = cairo_pdf)
 
 # %%
-# reg_by_group2(regsamp[continent != ""], continent,
-#       bat_first ~ wintoss | 0 | 0 | mid) %>% rbindlist %>%
-#     .[term == "wintoss"]
-# %%
-
-##    ##    ###    ########  ########     ###
-##   ##    ## ##   ##     ## ##     ##   ## ##
-##  ##    ##   ##  ##     ## ##     ##  ##   ##
-#####    ##     ## ########  ########  ##     ##
-##  ##   ######### ##        ##        #########
-##   ##  ##     ## ##        ##        ##     ##
-##    ## ##     ## ##        ##        ##     ##
-
-## -----------------------------------------------------------------------------
-# mu = regsamp[, mean(bat_first), wintoss][, V1]
-# always_takers = nrow(regsamp[wintoss != 1 & bat_first == 1]) / nrow(regsamp[wintoss != 1])
-# never_takers =  nrow(regsamp[wintoss == 1 & bat_first == 0]) / nrow(regsamp[wintoss == 1])
-# compliers = mu[2] - mu[1]
-#
-#
-
-minimal = regsamp[, .(wingame, bat_first, wintoss)]
-setnames(minimal, c('wingame', 'bat_first', 'wintoss'), c('y', 'd', 'z'))
-
-(shares = c(
-  minimal[z == 1, mean(d)] -  minimal[z == 0, mean(d)] ,
-      minimal[z == 0, mean(d)],
-  1 - minimal[z == 1, mean(d)]))
-
-# π_compliers = Pr (D1 > D0 |X) = E [D|X, Z = 1] − E [D|X, Z = 0]
-# π_always_takers = Pr (D1 = D0 = 1|X) = E [D|X, Z = 0]
-# π_never_takers = Pr (D1 = D0 = 0|X) = 1 − E [D|X, Z = 1]
-
-# %% ## -----------------------------------------------------------------------------
-setorder(samp2, 'mid')
-samp2 = regsamp[!is.na(rank) & !is.na(home_country)]
-samp2[, lowrank := min(rank) , by = mid]
-samp2[, underdog := ifelse(rank == lowrank, 1, 0)]
-
-samp2[, dn := 1*(day_n_night == "day/night match")]
-samp2[, home := 1*home_country]
-samp2 = dummy_cols(samp2, select_columns = c('time_unit', 'continent', 'name')) %>%
-  clean_names()
-
-# %%
-kappa_avg = function(xn, df = samp2) {
-  x = as.matrix(df[, ..xn]); y = as.matrix(df$wingame)
-  d = df$bat_first; z = df$wintoss
-  ϕ = glm(z ~ x, family = binomial())$fitted.values
-  κ = 1 - (d * (1-z))/(1-ϕ) - ((1-d) * z)/ϕ
-  mean(κ * x) / mean(κ)
-}
-
-
-# %%
-samp2 %>% glimpse
-
-colnames(samp2) %>% str_subset("name_") -> team_dummies
-colnames(samp2) %>% str_subset("continent_") -> geo_dummies
-covs = c('underdog', 'dn', 'home', team_dummies, geo_dummies)
-kappas = map_dbl(covs, kappa_avg)
-kappa_res = data.table(covar = covs, kappa = round(kappas, 2))
-kappa_res[, cov := str_replace(covar, "(name_|continent_)", "")]
-kappa_res[, cov := str_replace(cov, "_", " ")]
-kappa_res = kappa_res[, .(cov, kappa)]
-
-kappa_res[cov == "dn", cov := "day/night"]
-# covariates
-kappa_res[1:3] %>% kable(format = 'latex')
-kappa_res[4:16][cov != "netherlands" & cov != 'ireland'] %>% kable(format = 'latex')
-kappa_res[17:nrow(kappa_res)][cov != "americas" ] %>% kable(format = 'latex')
-
-# cbind(c("Underdog", "Day/Night Match", "Home Team", "Rank"))
-# times = colnames(samp2) %>% str_subset("time_unit_")
-# (time_kappa = times %>% map_dbl(kappa_avg))
-# cbind(times, time_kappa)
-#
-# %% ## -----------------------------------------------------------------------------
-
-larf_fit = function(xn, df = samp2) {
-  X = as.matrix(df[, ..xn]); y = as.matrix(df$wingame)
-  d = df$bat_first; z = df$wintoss
-  ϕ = glm(z ~ X, family = binomial())$fitted.values
-  κ = 1 - (d * (1-z))/(1-ϕ) - ((1-d) * z)/ϕ
-  Xw = cbind(1, X, d)
-  larf <- solve(t(Xw) %*% diag(κ) %*% Xw ) %*% t(Xw) %*% diag(κ) %*% y
-  return(larf)
-}
-
-larf_fit(c('underdog', 'dn', 'home'))
-
-
-
-# %% ## -----------------------------------------------------------------------------
-######  ##     ## ##     ## ##     ## ##          ###    ######## #### ##     ## ########
-##    ## ##     ## ###   ### ##     ## ##         ## ##      ##     ##  ##     ## ##
-##       ##     ## #### #### ##     ## ##        ##   ##     ##     ##  ##     ## ##
-##       ##     ## ## ### ## ##     ## ##       ##     ##    ##     ##  ##     ## ######
-##       ##     ## ##     ## ##     ## ##       #########    ##     ##   ##   ##  ##
-##    ## ##     ## ##     ## ##     ## ##       ##     ##    ##     ##    ## ##   ##
-######   #######  ##     ##  #######  ######## ##     ##    ##    ####    ###    ########
-
-library(patchwork)
-df  = import(file.path(root, "tmp/overs_odi/overs/overs_1000891.json")) %>% setDT
-df1 = import(file.path(root, "tmp/overs_odi/overs/overs_1000893.json")) %>% setDT
-# %%
-cum_run_curves = function(df){
-  subt = paste(unique(df$teamShortName) , collapse = ' vs ')
-  df[, remaining_wickets := 11 - totalWicket]
-  # max run tallies
-  totruns = df[, max(totalRuns), by = 'innings']
-  # figure
-  f = ggplot(df, aes(over, totalRuns, colour = as.factor(innings))) +
-    geom_point(aes(alpha = remaining_wickets)) +
-    geom_hline(yintercept = totruns[1, 2][[1]], colour = 'red', alpha = 0.5, linetype = 'dashed') +
-    geom_hline(yintercept = totruns[2, 2][[1]], colour = 'blue' , alpha = 0.5, linetype = 'dashed') +
-    geom_vline(xintercept = 50, alpha = 0.5, linetype = 'dotted') +
-    scale_colour_brewer(palette = "Set1") +
-    labs(subtitle = subt, caption = 'alpha scaled by number of wickets left',
-      colour = 'Innings') + scale_alpha(guide = 'none')
-  return(f)
-}
-
-p1 = cum_run_curves(df1) + ggtitle('Failed Chase')
-p2 = cum_run_curves(df) + ggtitle('Successful Chase')
-
-# %%
-p = p1 / p2
-p
-
-
-## -----------------------------------------------------------------------------
-matchdata = fread(file.path(root, 'repos/cricket-stats/data/final_output.csv'))
-ODIs = matchdata[type_of_match == "ODI"]
-dl_matches = ODIs[duckworth_lewis == 1]
-dl_ids = dl_matches[, match_id]
-dl_id = dl_ids[[50]]
-dl_matches[match_id == dl_id, outcome]
-
-# %%
-match = import(file.path(root, glue::glue("tmp/overs_odi/overs/overs_{dl_id}.json"))) %>% setDT
-
-match %>% glimpse
-
-cum_run_curves(match)
+ggsave(file.path(outdir, 'first_stage_by_rank_dl_season.pdf'), p_fs_het3,
+  height = 10, width = 10, device = cairo_pdf)
