@@ -10,8 +10,7 @@ options(repr.plot.width=12, repr.plot.height=9)
 
 # %%
 # setwd(root)
-root = '/home/alal/Dropbox/1_Research/cricket/'
-datadir = file.path(root, "repos/cricket-stats/data")
+datadir = file.path("../data/")
 
 # %% input data
 odi_ranks  <- fread(file.path(datadir,"rankings_odi.csv"))
@@ -316,3 +315,85 @@ crickett$signed_diff_ranks <- ifelse(crickett$var=="team1",
 
 # %%
 fwrite(crickett, file.path(root, "tmp/matches_long.csv"))
+
+# %%
+# %%
+########  ########  ######## ########
+##     ## ##     ## ##       ##     ##
+##     ## ##     ## ##       ##     ##
+########  ########  ######   ########
+##        ##   ##   ##       ##
+##        ##    ##  ##       ##
+##        ##     ## ######## ##
+
+crickett = fread(file.path(datadir, "/matches_long.csv"))
+setorder(crickett, -year, -month, -date, mid)
+# %%
+crickett %>% glimpse
+crickett$type_of_match %>% tabyl %>% mutate(n/2)
+
+# %%
+# check that match id is unique
+crickett[, .N, mid][order(-N)][1]
+# dedupe
+crickett$type_of_match %>% tabyl
+# # ## Subsample of well understood match types
+regsamp = crickett[type_of_match  %in%
+  c("ODI", "T20", "T20I", "Twenty20", "TEST", "FC")]
+# throw out matches with no results / cancelled / walkover
+regsamp[outcome %like% 'abandoned' | outcome %like% 'cancelled', .N]
+regsamp = regsamp[!(outcome %like% 'abandoned' | outcome %like% 'cancelled')]
+regsamp[outcome %like% 'walkover' , .N]
+regsamp = regsamp[!(outcome %like% 'walkover')]
+# fix bat first and toss indicators
+regsamp$bat_first %>% tabyl
+# win toss checks
+regsamp$wintoss %>% tabyl
+# final batting order checks
+regsamp[, bat_first_min := min(bat_first), by = mid]
+regsamp$bat_first_min %>% tabyl
+# these have no toss info
+regsamp[bat_first_min == 1,
+  .(mid, outcome, wintoss, wingame, bat_first, bat_first_min)]
+# drop them
+regsamp = regsamp[!(bat_first_min == 1)]
+
+# check coding of draws
+regsamp[, .N, wingame]
+
+#
+# some matches record ties differently
+regsamp[, res_match_exists := max(wingame), mid] # matches for which at least one team is recorded to have won
+regsamp[, table(res_match_exists)]
+# draws for test and FC matches
+regsamp[res_match_exists == 0.5, table(type_of_match)]
+#
+regsamp[res_match_exists == 0, .N, type_of_match]
+regsamp[res_match_exists == 0, .(outcome)] %>% head
+# recode them to draw for now - check w others later
+regsamp[res_match_exists == 0, wingame := 0.5]
+# finally, consolidate match type before FEs and subgroup analyses
+regsamp[, .N, type_of_match]
+regsamp[, type_of_match2 := case_when(
+  type_of_match == "ODI"          ~ "OD",
+  type_of_match == "T20I"         ~ "T20",
+  type_of_match == "Women\'s T20" ~ "T20",
+  TRUE ~ type_of_match)]
+
+regsamp %>% tabyl(type_of_match2)
+# time indicators
+regsamp[, time_unit  := cut(year,
+  breaks = c(-Inf, 1850, 1900, 1950, 1980, 1990, 2000, 2010, 2020),
+  labels = c("<=1850", "1851-1900", "1901-1950", "1951-1980" ,"1981-1990",
+             "1991-2000", "2001-2010", "2011-2020"))]
+# regsamp[, tabyl(year), by = time_unit]
+
+
+# %% create team-FE for teams with more than 10 matches
+regsamp[, team_nmatches := .N, name]
+regsamp[, teamname := ifelse(team_nmatches > 10, name, "Misc")]
+
+# %%
+regsamp %>% saveRDS(file.path(datadir, "/regression_sample.rds"))
+
+# %%

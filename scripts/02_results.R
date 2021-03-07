@@ -9,10 +9,18 @@ options(repr.plot.width=12, repr.plot.height=9)
 set.seed(42)
 outf = 'latex'
 ## -----------------------------------------------------------------------------
-# %% long data
-root = '/home/alal/Dropbox/1_Research/cricket/'
-datadir = file.path(root, "repos/cricket-stats/data")
-outdir = file.path(root, "output")
+# %% paths
+outdir = file.path("../output")
+regsamp = readRDS(file.path("../data/regression_sample.rds"))
+
+# %%
+######## ##     ## ##    ##  ######  ######## ####  #######  ##    ##  ######
+##       ##     ## ###   ## ##    ##    ##     ##  ##     ## ###   ## ##    ##
+##       ##     ## ####  ## ##          ##     ##  ##     ## ####  ## ##
+######   ##     ## ## ## ## ##          ##     ##  ##     ## ## ## ##  ######
+##       ##     ## ##  #### ##          ##     ##  ##     ## ##  ####       ##
+##       ##     ## ##   ### ##    ##    ##     ##  ##     ## ##   ### ##    ##
+##        #######  ##    ##  ######     ##    ####  #######  ##    ##  ######
 
 # %% intro subgroup stats + figs
 reg_by_group2 = function(df, groupvar, fml){
@@ -62,90 +70,20 @@ ann_coefplotter = function(df, title, vn = 1.5, hn = 0){
 
 
 # %%
-crickett = fread(file.path(root, "tmp/matches_long.csv"))
-setorder(crickett, -year, -month, -date, mid)
-# %%
-crickett %>% glimpse
-crickett$type_of_match %>% tabyl %>% mutate(n/2)
-
-# %%
-########  ########  ######## ########
-##     ## ##     ## ##       ##     ##
-##     ## ##     ## ##       ##     ##
-########  ########  ######   ########
-##        ##   ##   ##       ##
-##        ##    ##  ##       ##
-##        ##     ## ######## ##
-
-# %%
-# check that match id is unique
-crickett[, .N, mid][order(-N)][1]
-# dedupe
-crickett$type_of_match %>% tabyl
-# # ## Subsample of well understood match types
-regsamp = crickett[type_of_match  %in%
-  c("ODI", "T20", "T20I", "Twenty20", "TEST", "FC")]
-# throw out matches with no results / cancelled / walkover
-regsamp[outcome %like% 'abandoned' | outcome %like% 'cancelled', .N]
-regsamp = regsamp[!(outcome %like% 'abandoned' | outcome %like% 'cancelled')]
-regsamp[outcome %like% 'walkover' , .N]
-regsamp = regsamp[!(outcome %like% 'walkover')]
-# fix bat first and toss indicators
-regsamp$bat_first %>% tabyl
-# win toss checks
-regsamp$wintoss %>% tabyl
-# final batting order checks
-regsamp[, bat_first_min := min(bat_first), by = mid]
-regsamp$bat_first_min %>% tabyl
-# these have no toss info
-regsamp[bat_first_min == 1,
-  .(mid, outcome, wintoss, wingame, bat_first, bat_first_min)]
-# drop them
-regsamp = regsamp[!(bat_first_min == 1)]
-
-# check coding of draws
-regsamp[, .N, wingame]
-
-#
-# some matches record ties differently
-regsamp[, res_match_exists := max(wingame), mid] # matches for which at least one team is recorded to have won
-regsamp[, table(res_match_exists)]
-# draws for test and FC matches
-regsamp[res_match_exists == 0.5, table(type_of_match)]
-#
-regsamp[res_match_exists == 0, .N, type_of_match]
-regsamp[res_match_exists == 0, .(outcome)] %>% head
-# recode them to draw for now - check w others later
-regsamp[res_match_exists == 0, wingame := 0.5]
-# finally, consolidate match type before FEs and subgroup analyses
-regsamp[, .N, type_of_match]
-regsamp[, type_of_match2 := case_when(
-  type_of_match == "ODI"          ~ "OD",
-  type_of_match == "T20I"         ~ "T20",
-  type_of_match == "Women\'s T20" ~ "T20",
-  TRUE ~ type_of_match)]
-
-regsamp %>% tabyl(type_of_match2)
-# time indicators
-regsamp[, time_unit  := cut(year,
-  breaks = c(-Inf, 1850, 1900, 1950, 1980, 1990, 2000, 2010, 2020),
-  labels = c("<=1850", "1851-1900", "1901-1950", "1951-1980" ,"1981-1990",
-             "1991-2000", "2001-2010", "2011-2020"))]
-# regsamp[, tabyl(year), by = time_unit]
-
-
-# %% create team-FE for teams with more than 10 matches
-regsamp[, team_nmatches := .N, name]
-regsamp[, teamname := ifelse(team_nmatches > 10, name, "Misc")]
+######  ##     ## ##     ## ##     ##    ###    ########  ##    ##
+##    ## ##     ## ###   ### ###   ###   ## ##   ##     ##  ##  ##
+##       ##     ## #### #### #### ####  ##   ##  ##     ##   ####
+######  ##     ## ## ### ## ## ### ## ##     ## ########     ##
+     ## ##     ## ##     ## ##     ## ######### ##   ##      ##
+##    ## ##     ## ##     ## ##     ## ##     ## ##    ##     ##
+######   #######  ##     ## ##     ## ##     ## ##     ##    ##
 
 regsamp[, tabyl(type_of_match)]
 # %%
-# sanity checks - these should be perfectly balanced
 regsamp[, .N, bat_first]
 regsamp[, .N, wingame]
 regsamp[, .N, wintoss]
 
-# %%
 # %%
 regsamp %>%
   tabyl(wintoss, wingame) %>%
@@ -170,8 +108,6 @@ regsamp[bat_or_bowl == 2]  %>%
 .381 * .565 + .408 * .435
 
 .381 * .565 + .408 * .435
-
-# %%
 
 
 # %%
@@ -226,7 +162,7 @@ ts_counts %<>% mutate(lab = glue::glue("{n_matches_time}\n{round(pct_matches_tim
 )
 
 
-
+# %%
 ggsave(file.path(outdir, 'matchcounts.pdf'), p0, width = 5, height = 7.5, device = cairo_pdf)
 
 
@@ -289,16 +225,6 @@ binom.test(homet[[2]], homet[[4]], p = .5)$p.value
 # reg_by_group2(regsamp[!is.na(homecountry)], type_of_match2, wintoss ~ home_country)
 
 # %%
-## -----------------------------------------------------------------------------
-########  ########  ######    ######
-##     ## ##       ##    ##  ##    ##
-##     ## ##       ##        ##
-########  ######   ##   ####  ######
-##   ##   ##       ##    ##        ##
-##    ##  ##       ##    ##  ##    ##
-##     ## ########  ######    ######
-
-# %%
 
 ########  ########
 ##     ## ##
@@ -315,20 +241,9 @@ rf2 = felm(wingame ~ wintoss | as.factor(teamname) + as.factor(type_of_match2) |
 rf3 = felm(wingame ~ wintoss | as.factor(teamname) +
           as.factor(type_of_match2) + as.factor(time_unit) | 0 | mid , regsamp)
 
-# %%
-# reduced_form = feols(wingame ~ wintoss | 0 , cluster = ~mid , data = regsamp)
-# rf1 = feols(wingame ~ wintoss | as.factor(teamname) , cluster = ~mid , regsamp)
-# rf2 = feols(wingame ~ wintoss | as.factor(teamname) + as.factor(type_of_match2) , cluster = ~mid , regsamp)
-# rf3 = feols(wingame ~ wintoss | as.factor(teamname) +
-#           as.factor(type_of_match2) + as.factor(time_unit) , cluster = ~mid , regsamp)
-#
-# etable(reduced_form, rf1, rf2, rf3)
-#
 # %% export
-marker = function (name, yesno){
-        return(c(name, map_chr(yesno, function(x) ifelse(x, "$\\checkmark$", ""))))
-}
-fstatrow = function(m) round(m$stage1$iv1fstat[[1]][['F']], 2)
+marker = function (name, yesno) return(c(name, map_chr(yesno, function(x) ifelse(x, "$\\checkmark$", ""))))
+
 # %% export reduced form table
 
 stargazer(reduced_form, rf1, rf2, rf3,

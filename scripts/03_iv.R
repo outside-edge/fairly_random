@@ -1,4 +1,19 @@
+# %% ####################################################
+rm(list = ls())
+library(LalRUtils)
+LalRUtils::libreq(tidyverse, data.table, stargazer2, broom, fixest,
+  lfe, ivmodel, fastDummies, patchwork, purrr, kableExtra, xtable,
+  rio, magrittr, janitor, knitr, ggrepel)
+theme_set(lal_plot_theme())
+options(repr.plot.width=12, repr.plot.height=9)
+set.seed(42)
+outf = 'latex'
+# %% long data
+outdir = file.path("../output")
+regsamp = readRDS("../data/regression_sample.rds")
 # %%
+fstatrow = function(m) round(m$stage1$iv1fstat[[1]][['F']], 2)
+marker = function (name, yesno) return(c(name, map_chr(yesno, function(x) ifelse(x, "$\\checkmark$", ""))))
 ########     ###    ########
 ##     ##   ## ##      ##
 ##     ##  ##   ##     ##
@@ -6,9 +21,6 @@
 ##     ## #########    ##
 ##     ## ##     ##    ##
 ########  ##     ##    ##
-
-# %%
-
 # %%
 ols          = felm(wingame ~ bat_first | 0 | 0 | mid , regsamp)
 # matches where toss-winner chose to bat first
