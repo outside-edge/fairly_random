@@ -2,8 +2,8 @@
 rm(list = ls())
 library(LalRUtils)
 LalRUtils::libreq(tidyverse, data.table, stargazer2, broom, fixest,
-  lfe, ivmodel, fastDummies, patchwork, purrr, kableExtra, xtable,
-  rio, magrittr, janitor, knitr, ggrepel, mediation)
+  lfe, fastDummies, patchwork, purrr, kableExtra, xtable,
+  rio, magrittr, janitor, knitr, ggrepel)
 theme_set(lal_plot_theme())
 options(repr.plot.width=12, repr.plot.height=9)
 set.seed(42)
@@ -77,8 +77,7 @@ ann_coefplotter = function(df, title, vn = 1.5, hn = 0){
      ## ##     ## ##     ## ##     ## ######### ##   ##      ##
 ##    ## ##     ## ##     ## ##     ## ##     ## ##    ##     ##
 ######   #######  ##     ## ##     ## ##     ## ##     ##    ##
-
-regsamp[, tabyl(type_of_match)]
+regsamp[, tabyl(type_of_match2)]
 # %%
 regsamp[, .N, bat_first]
 regsamp[, .N, wingame]
@@ -131,6 +130,23 @@ regsamp[type_of_match == "FC"] %>%
   tabyl(wintoss, wingame) %>%
   adorn_percentages("row") %>%
   adorn_pct_formatting()
+
+# %%
+########  ########     ###    ##      ##  ######
+##     ## ##     ##   ## ##   ##  ##  ## ##    ##
+##     ## ##     ##  ##   ##  ##  ##  ## ##
+##     ## ########  ##     ## ##  ##  ##  ######
+##     ## ##   ##   ######### ##  ##  ##       ##
+##     ## ##    ##  ##     ## ##  ##  ## ##    ##
+########  ##     ## ##     ##  ###  ###   ######
+
+regsamp[type_of_match2 %in% c("FC", "TEST") & wintoss == 1 & wingame %in% c(0.0, 0.5)] %>% tabyl(wingame)
+regsamp[type_of_match2 %in% c("FC", "TEST") & wintoss == 0 & wingame %in% c(0.0, 0.5)] %>% tabyl(wingame)
+
+regsamp[type_of_match2 %in% c("FC", "TEST") & wintoss == 1 & wingame %in% c(0.5, 1.0)] %>% tabyl(wingame)
+regsamp[type_of_match2 %in% c("FC", "TEST") & wintoss == 0 & wingame %in% c(0.5, 1.0)] %>% tabyl(wingame)
+
+# %%
 
 ######  ##     ## ##     ##  ######  ########    ###    ########  ######
 ##    ## ##     ## ###   ### ##    ##    ##      ## ##      ##    ##    ##

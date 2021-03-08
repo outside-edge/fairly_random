@@ -325,7 +325,6 @@ fwrite(crickett, file.path(root, "tmp/matches_long.csv"))
 ##        ##   ##   ##       ##
 ##        ##    ##  ##       ##
 ##        ##     ## ######## ##
-
 crickett = fread(file.path(datadir, "/matches_long.csv"))
 setorder(crickett, -year, -month, -date, mid)
 # %%
@@ -337,6 +336,8 @@ crickett$type_of_match %>% tabyl %>% mutate(n/2)
 crickett[, .N, mid][order(-N)][1]
 # dedupe
 crickett$type_of_match %>% tabyl
+
+# %%
 # # ## Subsample of well understood match types
 regsamp = crickett[type_of_match  %in%
   c("ODI", "T20", "T20I", "Twenty20", "TEST", "FC")]
