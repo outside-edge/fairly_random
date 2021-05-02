@@ -13,6 +13,8 @@ outf = 'latex'
 outdir = file.path("../output")
 regsamp = readRDS(file.path("../data/regression_sample.rds"))
 
+regsamp[, last_outcome := lag(wingame), by = name]
+regsamp[, last_toss    := lag(wintoss), by = name]
 # %%
 ######## ##     ## ##    ##  ######  ######## ####  #######  ##    ##  ######
 ##       ##     ## ###   ## ##    ##    ##     ##  ##     ## ###   ## ##    ##
@@ -103,12 +105,10 @@ regsamp[bat_or_bowl == 2]  %>%
   adorn_pct_formatting()
 
 
+# %% sanity checks
+.381 * .565 + .408 * .435
+
 # %%
-.381 * .565 + .408 * .435
-
-.381 * .565 + .408 * .435
-
-
 # %%
 
 regsamp[type_of_match == "ODI"] %>%
@@ -184,8 +184,6 @@ ggsave(file.path(outdir, 'matchcounts.pdf'), p0, width = 5, height = 7.5, device
 
 # %% balance checks
 setorder(regsamp, name, date)
-regsamp[, last_outcome := lag(wingame), by = name]
-regsamp[, last_toss    := lag(wintoss), by = name]
 balsamp2 = regsamp[!is.na(rank) & rank != 0];
 balsamp2[, `:=`(lowrank = min(rank), nm = .N) , by = mid]
 balsamp2 = balsamp2[nm == 2]
@@ -451,10 +449,12 @@ tests$time_unit %>% tabyl
 rank_exists = regsamp[type_of_match2 %in% c("OD", "TEST") & !is.na(rank)]
 rank_exists[, diff_rank := abs(rank[1] - rank[2]), by = mid]
 rank_exists[, big_gap   := ifelse(diff_rank > 15, 1, 0), by = mid]
+rank_exists[, diff_std := scale(diff_rank)]
 
 # %%
+# %%
 (p_rank_test = reg_by_group2(rank_exists[!is.na(big_gap) & type_of_match == "TEST"], big_gap,
-        formula_lfe('wingame', 'wintoss', C = "mid")) %>% rbindlist %>%
+        formula_fixest('wingame', 'wintoss')) %>% rbindlist %>%
     .[term == "wintoss"]  %>%
     inner_join(counter(rank_exists[!is.na(big_gap) & type_of_match == "TEST"], big_gap), by = "group") %>%
     mutate(group = as.factor(group)) %>%
@@ -462,7 +462,7 @@ rank_exists[, big_gap   := ifelse(diff_rank > 15, 1, 0), by = mid]
 )
 
 (p_rank_odi = reg_by_group2(rank_exists[!is.na(big_gap) & type_of_match == "ODI"], big_gap,
-        formula_lfe('wingame', 'wintoss', C = "mid")) %>% rbindlist %>%
+        formula_fixest('wingame', 'wintoss')) %>% rbindlist %>%
     .[term == "wintoss"]  %>%
     inner_join(counter(rank_exists[!is.na(big_gap) & type_of_match == "ODI"], big_gap), by = "group") %>%
     mutate(group = as.factor(group)) %>%
@@ -470,16 +470,17 @@ rank_exists[, big_gap   := ifelse(diff_rank > 15, 1, 0), by = mid]
 )
 
 (p_dl = reg_by_group2(regsamp[type_of_match == "ODI"], duckworth_lewis,
-        formula_lfe('wingame', 'wintoss', C = "mid")) %>% rbindlist %>%
+        formula_fixest('wingame', 'wintoss')) %>% rbindlist %>%
     .[term == "wintoss"]  %>%
     inner_join(counter(regsamp[type_of_match == "ODI"], duckworth_lewis), by = "group") %>%
     mutate(group = as.factor(group)) %>%
     ann_coefplotter(., "By Use of Duckworth Lewis")
 )
 
+
 eng = regsamp[country == "England" & month != 3]
 (p_season = reg_by_group2(eng, month,
-        formula_lfe('wingame', 'wintoss', C = "mid")) %>% rbindlist %>%
+        formula_fixest('wingame', 'wintoss')) %>% rbindlist %>%
     .[term == "wintoss"]  %>%
     inner_join(counter(eng, month), by = "group") %>%
     mutate(group = as.factor(group)) %>%
@@ -493,6 +494,52 @@ eng = regsamp[country == "England" & month != 3]
 # %%
 ggsave(file.path(outdir, 'reduced_form_by_rank_dl_season.pdf'), p_rf_het3,
   height = 10, width = 10, device = cairo_pdf)
+
+# %%
+regsamp[type_of_match == "ODI" & duckworth_lewis == 0] %>% tabyl(wingame, wintoss)
+regsamp[type_of_match == "ODI" & duckworth_lewis == 1] %>% tabyl(wingame, wintoss)
+# %%
+##     ## ######## ########
+##     ## ##          ##
+##     ## ##          ##
+######### ######      ##
+##     ## ##          ##
+##     ## ##          ##
+##     ## ########    ##
+libreq(SortedEffects, tictoc)
+
+# %%
+het_te_df = rank_exists[,
+  .(name, type_of_match, wintoss, bat_first, wingame, rank, last_outcome, last_toss)] %>% na.omit
+het_te_df[, wingame := as.integer(wingame)]
+het_te_wide = dummy_cols(het_te_df, 'name') %>% clean_names
+# %%
+het_te_wide %>% colnames %>% str_subset("name_.*") -> team_dummies
+fml = formula_stitcher('wingame', c('wintoss', 'rank', 'last_outcome', 'last_toss', team_dummies))
+# %%
+tic()
+sortedeffects_od <- spe(fm = fml, data = het_te_wide[type_of_match == "ODI"],
+        var = "wintoss", method = "logit", us = seq(5, 95, 5)/100,
+        b = 100, bc = TRUE)
+toc()
+# %%
+pdf(file.path(outdir, 'het_rank_te_odi.pdf'))
+plot(x = sortedeffects_od, ylim = c(-.05, 0.05), ylab = "Change in Probability from winning the toss",
+  main = "ATE and Sorted Effect of Toss on Win Probability \n One-day Matches with ILO rankings",
+  sub = "Logit ; het-TE by rank, last outcome and toss, and team dummies")
+dev.off()
+# %%
+sortedeffects_test <- spe(fm = fml, data = het_te_wide[type_of_match == "TEST"],
+        var = "wintoss", method = "logit", us = seq(5, 95, 5)/100,
+        b = 100, bc = TRUE)
+# %%
+pdf(file.path(outdir, 'het_rank_te_test.pdf'))
+plot(x = sortedeffects_test, ylim = c(-.05, 0.1), ylab = "Change in Probability from winning the toss",
+  main = "ATE and Sorted Effect of Toss on Win Probability \n Test Matches with ILO rankings",
+  sub = "Logit ; het-TE by ranks, last outcome and toss, and team dummies")
+dev.off()
+# %%
+
 
 # %%
 ######## #### ########   ######  ########  ######  ########    ###     ######   ########
