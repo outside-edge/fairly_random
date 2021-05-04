@@ -9,7 +9,7 @@ We analyze data from over 35,000 first-class men's cricket matches played over t
 ### Scripts
 
 0. [Helper Functions](scripts/00_func.R)
-   The file contains some helper functions that are sourced in the analysis files. 
+   The file contains some helper functions that are sourced in the analysis script. 
 
 1. [Data preparation](scripts/01_prep.R). 
    Reads in [data/rankings_odi.csv](data/rankings_odi.csv), [data/rankings_test.csv](data/data/rankings_test.csv) and [data/grounds.csv](data/grounds.csv) and produces [data/regression_sample.rds](data/regression_sample.rds)
