@@ -8,20 +8,21 @@ We analyze data from over 35,000 first-class men's cricket matches played over t
 
 ### Scripts
 
+0. [Helper Functions](scripts/00_func.R)
+   The file contains some helper functions that are sourced in the analysis files. 
+
 1. [Data preparation](scripts/01_prep.R). 
    Reads in [data/rankings_odi.csv](data/rankings_odi.csv), [data/rankings_test.csv](data/data/rankings_test.csv) and [data/grounds.csv](data/grounds.csv) and produces [data/regression_sample.rds](data/regression_sample.rds)
 
 2. [Analysis](scripts/02_results.R) 
    Reads in [data/regression_sample.rds](data/regression_sample.rds) and produces materials in the [output](output/) folder.
 
+3. We explain the issues around using toss as IV at length in the manuscript. And that is why none of the analysis make it to the ms. But if you wanted to see how IV analysis would run, check out [scripts/03_iv.R](scripts/03_iv.R) which produces materials in [output/iv/](output/iv) folder.
+
 ### Manuscript
 
-We began by [merging the ranking and the match data](scripts/04_merge_ranking_data.R). We next [analyzed the data](scripts/05_cricket.R). The script produces [these figures](figs/). The tex and pdf files for the final write-up can be found [here](write_up/). 
+* [Manuscript (.tex, .pdf)](ms/)
 
 #### Authors
 
 Apoorva Lal, Derek Willis, Gaurav Sood and Avidit Acharya
-
-#### License
-
-Scripts, figures, and writing are released under [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/). 
