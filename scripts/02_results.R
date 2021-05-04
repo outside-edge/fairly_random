@@ -1,5 +1,9 @@
 # %% ####################################################
 rm(list = ls())
+
+# devtools::install_github("apoorvalal/LalRUtils")
+# devtools::install_github("apoorvalal/stargazer2")
+
 library(LalRUtils)
 LalRUtils::libreq(tidyverse, data.table, stargazer2, broom, fixest,
   lfe, fastDummies, patchwork, purrr, kableExtra, xtable,
@@ -435,7 +439,7 @@ ggsave(file.path(outdir, 'reduced_form_by_matchtype.pdf'), p_rf_het,
 
 # %%
 p_rf_het = (p_overtime / p_test_time  / p_fc_time / ( p_odi_time | p_t20_time )) +
-  plot_annotation('Heterogeneous Treatment Effects of the Toss on Win Probability by Format over time')
+  plot_annotation('Heterogeneous Treatment Effects of the Toss on Win Probability by Format Over Time')
 
 ggsave(file.path(outdir, 'reduced_form_by_format_overtime.pdf'), p_rf_het,
   height = 15, width = 12, device = cairo_pdf)
@@ -524,8 +528,8 @@ sortedeffects_od <- spe(fm = fml, data = het_te_wide[type_of_match == "ODI"],
 toc()
 # %%
 pdf(file.path(outdir, 'het_rank_te_odi.pdf'))
-plot(x = sortedeffects_od, ylim = c(-.05, 0.05), ylab = "Change in Probability from winning the toss",
-  main = "ATE and Sorted Effect of Toss on Win Probability \n One-day Matches with ILO rankings",
+plot(x = sortedeffects_od, ylim = c(-.05, 0.05), ylab = "Change in Probability from Winning the Toss",
+  main = "ATE and Sorted Effect of Toss on Win Probability \n One-day Matches with ELO rankings",
   sub = "Logit ; het-TE by rank, last outcome and toss, and team dummies")
 dev.off()
 # %%
@@ -534,8 +538,8 @@ sortedeffects_test <- spe(fm = fml, data = het_te_wide[type_of_match == "TEST"],
         b = 100, bc = TRUE)
 # %%
 pdf(file.path(outdir, 'het_rank_te_test.pdf'))
-plot(x = sortedeffects_test, ylim = c(-.05, 0.1), ylab = "Change in Probability from winning the toss",
-  main = "ATE and Sorted Effect of Toss on Win Probability \n Test Matches with ILO rankings",
+plot(x = sortedeffects_test, ylim = c(-.05, 0.1), ylab = "Change in Probability from Winning the Toss",
+  main = "ATE and Sorted Effect of Toss on Win Probability \n Test Matches with ELO rankings",
   sub = "Logit ; het-TE by ranks, last outcome and toss, and team dummies")
 dev.off()
 # %%
@@ -632,7 +636,7 @@ ggsave(file.path(outdir, 'first_stage_by_matchtype.pdf'), p_fs_het,
 
 # %%
 p_fs_het = (p_overtime / p_test_time  / p_fc_time / ( p_odi_time | p_t20_time )) +
-  plot_annotation('Heterogeneous Treatment Effects of the Toss on Bat Choice by Format over time')
+  plot_annotation('Heterogeneous Treatment Effects of the Toss on Bat Choice by Format Over Time')
 
 ggsave(file.path(outdir, 'first_stage_by_format_overtime.pdf'), p_fs_het,
   height = 15, width = 12, device = cairo_pdf)
@@ -677,9 +681,9 @@ eng = regsamp[country == "England" & month != 3]
 )
 
 (p_fs_het3 = ((p_rank_test | p_rank_odi | p_dl) /  p_season) +
-  plot_annotation('Heterogeneous Treatment Effects of the Toss on bat choice', subtitle = 'by Rank, Rain Interruptions, and Seasonality')
+  plot_annotation('Heterogeneous Treatment Effects of the Toss on Bat Choice', subtitle = 'by Rank, Rain Interruptions, and Seasonality')
 )
 
 # %%
 ggsave(file.path(outdir, 'first_stage_by_rank_dl_season.pdf'), p_fs_het3,
-  height = 10, width = 10, device = cairo_pdf)
+  height = 10, width = 20, device = cairo_pdf)

@@ -1,6 +1,7 @@
 # %%
 ###################################################
 rm(list = ls())
+# devtools::install_github("apoorvalal/LalRUtils")
 library(LalRUtils)
 LalRUtils::libreq(tidyverse, stargazer2, lfe, rio,
   foreach, magrittr, data.table, janitor) #,  lib2)
