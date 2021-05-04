@@ -8,7 +8,11 @@ We analyze data from over 35,000 first-class men's cricket matches played over t
 
 ### Scripts
 
-1. 
+1. [Data preparation](scripts/01_prep.R). 
+   Reads in [data/rankings_odi.csv](data/rankings_odi.csv), [data/rankings_test.csv](data/data/rankings_test.csv) and [data/grounds.csv](data/grounds.csv) and produces [data/regression_sample.rds](data/regression_sample.rds)
+
+2. [Analysis](scripts/02_results.R) 
+   Reads in [data/regression_sample.rds](data/regression_sample.rds) and produces materials in the [output](output/) folder.
 
 ### Manuscript
 
