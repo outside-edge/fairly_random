@@ -1,22 +1,28 @@
-### Fairly Random: Impact of Winning the Toss on Probability of Winning
+### Asymmetries in Cricket: The Effects of Winning the Toss on Winning the Match
 
-We analyze data from nearly 43,000 first-class men's cricket matches -- a near census of the relevant population. And we make a series of discoveries that upend some conventional wisdom, and understanding based on analysis of much smaller datasets --- in fact, one [prominent previous study (pdf)](http://people.stat.sfu.ca/~tim/papers/cricket.pdf) basis its analysis on just about 1% of the data we have.
+We analyze data from over 35,000 first-class men's cricket matches played over the course of more than one hundred fifty years---a near census of the relevant population---to estimate the effect of winning the toss on winning the match. We estimate the average effect of winning the toss on winning the match to be 1.8 percentage points: toss winners win 39.2% of the time and lose 37.4% of the time, with the remaining share being draws (mainly due test and first class cricket). The effect of winning the toss is largest in tests, where it is 4.9 percentage points, and is lowest in ODIs and T20s, where it is essentially zero. That being said, in ODIs and T20s that are day/night matches, the effect of winning the toss is 3.3 percentage points, whereas in day-time matches the effect is a precise zero.
 
 #### Data
 
-* **Match Level Data**: We got our data from [espncricinfo.com](http://espncricinfo.com). We went about downloading and parsing the data a couple of different ways. Gaurav just [scraped and parsed](https://github.com/soodoku/get-cricket-data) the HTML pages. Derek, clearly the sharper of the two, realized that espncricinfo also provides a nice json API and developed [a python module](https://github.com/dwillis/python-espncricinfo).  
-Aware of the duplication of work, in this repository, we only provide scripts and data that aren't available elsewhere (except for the final dataset we use). These include, a script to [download match ids](scripts/01_download_data.py), [match ids by match type (json)](data/json/), a script for [making the requests and parsing the requests](scripts/02_parse_cric.py) using the json data, and [output for ODI matches](data/odi_partial.csv) based on the script. However, the [final dataset we use](data/final_output.csv) is the same as posted on Gaurav's [repository](https://github.com/soodoku/get-cricket-data).
+1. The data for replicating the analysis is posted at: https://doi.org/10.7910/DVN/OB9G42
 
-* **Rankings Data**: [parse_rankings](scripts/03_parse_rankings.py) gets monthly rankings for ODIs from 1981-2013 and for tests from 1952-2013. ICC changed its site in 2014 so that it only shows the most recent rankings. The script outputs [odi rankings](data/odi_ranks.csv) and [test rankings](data/test_ranks.csv).
+### Scripts
 
-#### Analysis, Write-up, And Figures
+0. [Helper Functions](scripts/00_func.R)
+   The file contains some helper functions that are sourced in the analysis script. 
 
-We began by [merging the ranking and the match data](scripts/04_merge_ranking_data.R). We next [analyzed the data](scripts/05_cricket.R). The script produces [these figures](figs/). The tex and pdf files for the final write-up can be found [here](write_up/). 
+1. [Data preparation](scripts/01_prep.R). 
+   Reads in [data/rankings_odi.csv](data/rankings_odi.csv), [data/rankings_test.csv](data/data/rankings_test.csv) and [data/grounds.csv](data/grounds.csv) and produces [data/regression_sample.rds](data/regression_sample.rds)
+
+2. [Analysis](scripts/02_results.R) 
+   Reads in [data/regression_sample.rds](data/regression_sample.rds) and produces materials in the [output](output/) folder.
+
+3. We explain the issues around using toss as IV at length in the manuscript. And that is why none of the analysis make it to the ms. But if you wanted to see how IV analysis would run, check out [scripts/03_iv.R](scripts/03_iv.R) which produces materials in [output/iv/](output/iv) folder.
+
+### Manuscript
+
+* [Manuscript (.tex, .pdf)](ms/)
 
 #### Authors
 
-Gaurav Sood and Derek Willis
-
-#### License
-
-Scripts, figures, and writing are released under [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/). 
+Apoorva Lal, Derek Willis, Gaurav Sood and Avidit Acharya
