@@ -8,3 +8,5 @@ dev/
 *.Rhistory
 .Rproj.user
 assymetry.Rproj
+.RData
+asymmetry.Rproj
