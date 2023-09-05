@@ -96,12 +96,12 @@
 \usepackage{footmisc}
 \renewcommand{\footnotelayout}{\setstretch{2}}
 
-\title{Asymmetry in Cricket: The Effect of Winning the Toss on Winning the Match\thanks{Data and scripts needed to replicate the results are available at: https://github.com/outside-edge/asymmetry/}}
+\title{Fairly Random: The Effect of Winning the Toss on Winning the Match\thanks{Data and scripts needed to replicate the results are available at: https://github.com/outside-edge/asymmetry/}}
 
 \author{
 Apoorva Lal\thanks{Data Scientist, Netflix;  \href{mailto:lal.apoorva@gmail.com}{lal.apoorva@gmail.com }.} \;\;
-Derek Willis\thanks{Lecturer in Data and Computational Journalism, University of Maryland;  \href{mailto:dwillis@gmail.com}{dwillis@gmail.com}.}  \;\;
-Gaurav Sood\thanks{Independent researcher;  \href{mailto:gsood07@gmail.com}{gsood07@gmail.com}; Corresponding author. Phone: 650 269 7946. Address: 156th Place NE, Redmond, WA, 98052.}\;\;
+Derek Willis\thanks{Lecturer in Data and Computational Journalism, Philip Merrill College of Journalism, University of Maryland;  \href{mailto:dwillis@gmail.com}{dwillis@gmail.com}.}  \;\;
+Gaurav Sood\thanks{Independent researcher;  \href{mailto:gsood07@gmail.com}{gsood07@gmail.com}.}\;\;
 Avidit Acharya\thanks{Department of Political Science and Graduate School of Business, Stanford University; \href{mailto:avidit@stanford.edu}{avidit@stanford.edu}.}
 }
 \date{\today}
@@ -124,9 +124,9 @@ In cricket, which team bats first is determined by a toss. Does the team that wi
 
 \section{Introduction}
 
-In competitive sports, teams fight for every little advantage. Many sports, however, leave some important things to chance. In cricket, a coin toss is used to decide which team bats first. The choice is widely seen as consequential. In many matches, commentators and cricket enthusiasts claim that there is a definite advantage to either bowling or batting first.\footnote{See, for example, the \href{https://www.quora.com/How-much-does-a-toss-matter-to-a-game-of-cricket}{Quora page on ``How much does a toss matter to a game of cricket?''}.} The advantage is also often pointed to by the captains in the pre-toss interview and by the captain of the losing team in the post-match interview.
+In competitive sports, teams fight for every little advantage. Many sports, however, leave some important things to chance. In cricket, for instance, a coin toss is used to decide which team bats first. The choice is widely seen as consequential. In many matches, commentators and cricket enthusiasts claim that there is a definite advantage to either bowling or batting first.\footnote{See, for example, the \href{https://www.quora.com/How-much-does-a-toss-matter-to-a-game-of-cricket}{Quora page on ``How much does a toss matter to a game of cricket?''}.} The advantage is also often pointed to by the captains in the pre-toss interview and by the captain of the losing team in the post-match interview.
 
-In this paper, we measure the advantage conferred by winning the toss. To answer the question, we collected data on over 35,000 cricket matches played over 150 years---the largest ever dataset assembled for the question, and more than 50 times larger than used in prominent previous attempts \citep[see,][]{dawson2009bat, de1998winning}. In analyzing these data, we avoid a common but important pitfall that some other studies on the topic fall into. To avoid post-treatment bias \citep[see][]{acharya2015}, unlike \citet{dawson2009bat}, \citet{Saad2015}, etc., we do not condition on post coin-toss decisions. 
+In this paper, we measure the advantage conferred by winning the toss. To answer the question, we collected data on over 35,000 cricket matches played over 150 years---the largest ever dataset assembled for the question, and more than 50 times larger than used before \citep[see,][]{dawson2009bat, de1998winning}. In analyzing these data, we avoid a common but critical pitfall that some other studies on the topic fall into. To avoid post-treatment bias \citep[see][]{acharya2015}, unlike \citet{dawson2009bat}, \citet{Saad2015}, etc., we do not condition on decisions made after the toss, e.g., whether the team elects to bat or bowl first. (We tackle this issue at length later in the paper.)
 
 We find that winning the toss increases the chances of winning the match by 1.8 percentage points: toss winners prevail 39.2\% of the time and lose 37.4\% of the time; the rest of the matches are drawn or tied. The effect of winning the toss is the largest in Tests, where it is 4.9 percentage points, and the smallest in ODIs and T20s, where it is essentially zero on average. That said, in day/night ODIs and T20s, the effect of winning the toss is 3.3 percentage points.
 
@@ -136,7 +136,7 @@ With this, we turn to what teams choose after winning the toss. When pitch and w
 
 Lastly, a caveat about our findings. Our empirical approach estimates the extent to which teams have capitalized on the advantage granted by winning the toss and not the theoretical advantage granted by the toss. The toss may matter a lot in principle, but teams may decide poorly.
 
-The rest of the paper is organized as follows. We start by describing the data. We then analyze if the data are consistent with the toss being random. Next, we present the results. We end with discussing the policy implications.
+The rest of the paper is organized as follows. We start by describing the data. We then analyze if the data are consistent with the toss being random. Next, we present the results on the effect of winning the toss on the probability of winning. Given that some previous papers condition on decisions made after the toss, we discuss what teams decide to do when they win the toss and why conditioning on post-treatment decisions could bias the inference. We end with discussing the policy implications.
 
 \section{Data}
 
@@ -182,7 +182,7 @@ We next examine the effect of the toss across various subgroups. We report the e
 
 \end{itemize}
 
-\section{Batting Vs. Fielding First}
+\section{The Decision to Bat or Bowl First}
 
 56.5\% of teams that won the toss elected to bat. This is not surprising given the conventional wisdom is that when you are not sure about whether it is advantageous to bat or field first, bat first. The first column of Table \ref{table:iv_table} shows that 49.2\% of teams that batted first won the match, while 50.8\% of teams that fielded first won. The second column shows that among teams that won the toss and batted first the ``win-loss differential'' is small: these teams won only 0.2 percentage points more frequently than they lost, winning 38.1\% of matches and losing 37.9\% of matches, as reported in the introduction. This win-loss differential is smaller than it is for teams that won the toss and elected to field. The third column of the table shows that these teams won 3.9 percentage points more frequently than they lost: they won 40.8\% of their matches and lost 36.9\% of them. Combining this information with the fact that 56.5\% of teams that won the toss elected to bat (and only 43.5\% elected to field, as implied by the fourth column of the table), we learn that 94\% ($= .435 \times .039/.018$) of the 1.8 percentage point advantage to winning the toss that we reported in the previous section can be attributed to the success of toss-winning teams that elected to field. To further understand what explains the preference to bat or bowl first, we see how winning the toss affects the choice in various subsets:
 
@@ -205,13 +205,13 @@ We next examine the effect of the toss across various subgroups. We report the e
 
 \end{itemize}
 
-\subsection{The Difficulty in Estimating the Advantage to Electing to Bat/Field First}
+\subsection{The Difficulty in Estimating the Advantage of Choosing to Bat or Bowl First}
 
 Despite reporting the `reduced form' and `first stage' effects of the toss, we cannot interpret the ratio of these effects as the causal effect of batting first. If we used the toss as an instrument for batting first, say, we could at best hope to estimate the local average treatment effect (LATE) of electing to bat on winning the match \citep{angrist1996identification}. This is because in our setting treatment effects likely vary across groups: some teams in some circumstances will be better able to capitalize on batting first.  
 
 However, even the conditions under which the LATE is identified are not satisfied in our setting. To see why, first note that our setting has two-sided noncompliance: there are teams that win the toss that bat first and those that lose the toss that bat first as well. Then, recall that under two-sided noncompliance, the LATE is identified under a monotonicity assumption that rules out defiers. However, defiers are likely to be present in our setting: they correspond to dyads of opposing teams that walk onto the pitch intending to field first if they win the toss. In such a setting, the team that wins the toss will choose to field first and the team that loses the toss will be compelled to bat first. If these defiers are present, which they likely are, the monotonicity assumption does not hold, so we cannot assert that the IV estimates are giving us the LATE.
 
-We make these points more concrete. Recall that we saw that 56.5\% of teams that won the toss elect to bat, which is 6.5 percentage points more than what you would expect if the toss had no effect on the batting/fielding decision. In addition, the reduced form estimated effect of winning the toss on winning the match was 1.8 percentage points, implying that toss winners win an excess of 0.9 percent of matches over parity. The instrumented effect of batting first would then be estimated as 0.9/6.5 = 13.9 percentage points.\footnote{Since the choice to field first is the perfectly colinear inverse of the choice to bat first, flipping the sign of this number gives the estimated instrumented effect of electing to field first.} Can we interpret this as the average rate at which the complier teams that won the toss and elected to bat generated the excess wins? No, because these excess wins could have been generated by the defiers making good decisions to field. Since we saw that teams that win the toss and elect to field first have a higher win-loss differential than those that elect to bat first, it would be irresponsible to rule out this possibility. Consequently, it is unlikely the LATE can be identified in our setting.
+We make these points more concrete. Recall that we saw that 56.5\% of teams that won the toss elect to bat, which is 6.5 percentage points more than what you would expect if the toss had no effect on the batting/fielding decision. In addition, the reduced form estimated effect of winning the toss on winning the match was 1.8 percentage points, implying that toss winners win an excess of 0.9 percent of matches over parity. The instrumented effect of batting first would then be estimated as 0.9/6.5 = 13.9 percentage points.\footnote{Since the choice to field first is the perfectly colinear inverse of the choice to bat first, flipping the sign of this number gives the estimated instrumented effect of electing to field first.} Can we interpret this as the average rate at which the complier teams that won the toss and elected to bat generated the excess wins? No, because these excess wins could have been generated by the defiers making good decisions to field first. Since we saw that teams that win the toss and elect to field first have a higher win-loss differential than those that elect to bat first, it would be irresponsible to rule out this possibility. Consequently, it is unlikely the LATE can be identified in our setting.
 
 \section{Policy Proposals}
 
