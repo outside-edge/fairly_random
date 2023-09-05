@@ -13,6 +13,25 @@ test_ranks <- read_csv("data/rankings_test.csv")
 ranks <- rbind(odi_ranks, test_ranks)
 ranks$format <- toupper(ranks$format)
 
+odi_elo_ranks <- read_csv("data/elo/odi_ratings_1972_2021.csv") %>% mutate(format = "ODI")
+test_elo_ranks <- read_csv("data/elo/test_ratings_1881_2021.csv") %>% mutate(format = "TEST")
+t20_elo_ranks <- read_csv("data/elo/t20i_ratings_2006_2021.csv") %>% mutate(format = "T20I")
+elo_ranks <- rbind(odi_elo_ranks, test_elo_ranks, t20_elo_ranks)
+
+date_objects <- ymd(str_trim(elo_ranks$date))
+
+# Extract day, month, year, and day of the week using lubridate functions
+result <- data.frame(
+  date = elo_ranks$date,
+  day = day(date_objects),
+  month = month(date_objects),
+  year = year(date_objects)
+)
+
+# Dedupe before left joining
+result <- result %>% distinct(date, .keep_all = TRUE)
+elo_ranks <- left_join(elo_ranks, result, by = "date")
+
 # Grounds
 grounds <- read_csv("data/grounds.csv")
 
@@ -121,9 +140,17 @@ match <- match %>%
 ranks <- ranks %>%
   mutate(
     unique = tolower(paste0(format, country, month, year))
-  )
+  ) %>%
+  distinct(unique, .keep_all = TRUE)
 
-# merge - the sood way
+
+elo_ranks <- elo_ranks %>%
+  mutate(
+    unique = tolower(paste0(format, teams, month, year))
+  ) %>%
+  distinct(unique, .keep_all = TRUE)
+
+# merge to rank
 match <- match %>%
   left_join(ranks[, c("rank", "rating", "unique")], by = c("team1_spid" = "unique")) %>%
   rename(team1_rank = rank, team1_rating = rating)
@@ -131,6 +158,14 @@ match <- match %>%
 match <- match %>%
   left_join(ranks[, c("rank", "rating", "unique")], by = c("team2_spid" = "unique")) %>%
   rename(team2_rank = rank, team2_rating = rating)
+
+match <- match %>%
+  left_join(elo_ranks[, c("m_ratings", "unique")], by = c("team1_spid" = "unique")) %>%
+  rename(elo_team1_rating = m_ratings)
+
+match <- match %>%
+  left_join(elo_ranks[, c("m_ratings", "unique")], by = c("team2_spid" = "unique")) %>%
+  rename(elo_team2_rating = m_ratings)
 
 # Adhoc data integrity check
 match$team1_rank[match$men_type_of_match == 'ODI' & match$month == 4] %>% print
@@ -150,6 +185,18 @@ match <- match %>%
                               NA, 
                               cut(team1_rating - team2_rating, 
                                   breaks = quantile(team1_rating - team2_rating, 
+                                                    probs = seq(0, 1, length.out = 5), 
+                                                    na.rm = TRUE), 
+                                  labels = FALSE, 
+                                  include.lowest = TRUE))
+  )
+
+match <- match %>%
+  mutate(
+    elo_diff_rating_bins = ifelse(is.na(elo_team1_rating - elo_team2_rating),
+                              NA, 
+                              cut(elo_team1_rating - elo_team2_rating, 
+                                  breaks = quantile(elo_team1_rating - elo_team2_rating, 
                                                     probs = seq(0, 1, length.out = 5), 
                                                     na.rm = TRUE), 
                                   labels = FALSE, 
@@ -310,3 +357,15 @@ regression_results <- cricket %>%
   group_by(diff_rating_bins) %>%
   do(tidy(lm(team1_win_game ~ team1_win_toss, data = .))) %>%
   filter(term == "team1_win_toss")
+
+library(splines)
+summary(lm(team1_win_game ~ team1_win_toss*ns(I(elo_team1_rating - elo_team2_rating), 4), cricket))
+
+cricket %>%
+  filter(!grepl("WYU", men_type_of_match)) %>%
+  filter(!is.na(elo_team1_rating)) %>% 
+  group_by(elo_diff_rating_bins) %>%
+  do(tidy(lm(team1_win_game ~ team1_win_toss, data = .))) %>%
+  filter(term == "team1_win_toss")
+
+  
