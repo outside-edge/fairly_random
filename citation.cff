@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "Please cite it as below."
+authors:
+- family-names: "Lal"
+  given-names: "Apoorva"
+- family-names: "Willis"
+  given-names: "Derek"
+- family-names: "Sood"
+  given-names: "Gaurav"
+- family-names: "Acharya"
+  given-names: "Avidit"
+title: "Fairly Random: The Effect of Winning the Toss on Winning the Match"
+version: 1.0.0
+doi: 10.5281/zenodo.1234
+date-released: 2023-10-23
+url: "https://github.com/outside-edge/fairly_random"
+year: 2023
+journal: "Journal of Sports Analytics"
