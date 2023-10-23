@@ -1,0 +1,23 @@
+
+\begin{tabular}{@{\extracolsep{5pt}}lccccccc} 
+\\[-1.8ex]\hline \\[-1.8ex] 
+ & \multicolumn{3}{c}{OLS} & First-Stage & \multicolumn{3}{c}{IV} \\ 
+\\[-1.8ex] & (1) & (2) & (3) & (4) & (5) & (6) & (7)\\ 
+\hline \\[-1.8ex] 
+ Bat First & $-$0.016$^{***}$ & 0.002 & $-$0.039$^{***}$ &  &  &  &  \\ 
+  & (0.005) & (0.006) & (0.007) &  &  &  &  \\ 
+  Win Toss &  &  &  & 0.130$^{***}$ &  &  &  \\ 
+  &  &  &  & (0.005) &  &  &  \\ 
+  Bat First (IV) &  &  &  &  & 0.139$^{***}$ & 0.134$^{***}$ & 0.134$^{***}$ \\ 
+  &  &  &  &  & (0.036) & (0.036) & (0.036) \\ 
+  Constant & 0.508$^{***}$ & 0.499$^{***}$ & 0.519$^{***}$ & 0.435$^{***}$ & 0.430$^{***}$ &  &  \\ 
+  & (0.002) & (0.003) & (0.004) & (0.003) & (0.018) &  &  \\ 
+ Sample & All & TW bats & TW fields & All & All & All & All \\ 
+FS F-Stat &  &  &  &  &  & 604.71 & 579.95 \\ 
+Team FE &  &  &  &  &  & $\checkmark$ & $\checkmark$ \\ 
+Match-Type FE &  &  &  &  &  & $\checkmark$ & $\checkmark$ \\ 
+Decade FE &  &  &  &  &  &  & $\checkmark$ \\ 
+\hline &  &  &  &  &  &  &  \\ 
+Number of Matches & 35357 & 19971 & 15386 & 35357 & 35357 & 35357 & 35357 \\ 
+\hline \\[-1.8ex] 
+\end{tabular} 
