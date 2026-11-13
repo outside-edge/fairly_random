@@ -222,7 +222,7 @@ match[, result := case_when(
 
 match[result == "other", unique(outcome)]
 
-# %% examine cancelled
+# %% examine canceled
 match[grepl('No result', outcome)] %>% setDT  -> cancelled_matches
 cancelled_matches = cancelled_matches[type_of_match %in% c("ODI", "T20", "T20I", "Twenty20", "TEST", "FC")]
 cancelled_matches %>%
@@ -231,7 +231,7 @@ cancelled_matches %>%
 cancelled_matches %>% nrow
 
 
-# %% drop cancelled
+# %% drop canceled
 cricket %>% nrow
 cricket = match[!grepl('No result', outcome)]
 
@@ -342,7 +342,7 @@ crickett$type_of_match %>% tabyl
 # # ## Subsample of well understood match types
 regsamp = crickett[type_of_match  %in%
   c("ODI", "T20", "T20I", "Twenty20", "TEST", "FC")]
-# throw out matches with no results / cancelled / walkover
+# throw out matches with no results / canceled / walkover
 regsamp[outcome %like% 'abandoned' | outcome %like% 'cancelled', .N]
 regsamp = regsamp[!(outcome %like% 'abandoned' | outcome %like% 'cancelled')]
 regsamp[outcome %like% 'walkover' , .N]

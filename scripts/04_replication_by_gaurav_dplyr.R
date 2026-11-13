@@ -329,7 +329,7 @@ match <- match %>%
     )
   )
 
-# %% examine cancelled
+# %% examine canceled
 lista <- match %>%
   filter(type_of_match %in% c("LISTA"))
 
